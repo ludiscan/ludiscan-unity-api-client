@@ -1,0 +1,39 @@
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+*.unitypackage
+*.csproj
+*.sln
+
+# IDE
+.idea/
+.vs/
+.vscode/
+*.swp
+*.swo
+*~
+*.sln.iml
+*.csproj.user
+*.sln.DotSettings.user
+*.csproj.userprefs
+
+# OS
+.DS_Store
+Thumbs.db
+
+# NuGet (lowercase, not Unity Packages/)
+/packages/
+*.nupkg
+.nuget/
+# Keep Packages directory
+!Packages/
+!Packages/**
+
+# Local
+.env
+.env.local

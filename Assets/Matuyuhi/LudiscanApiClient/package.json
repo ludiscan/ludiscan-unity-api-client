@@ -1,0 +1,22 @@
+{
+  "name": "com.matuyuhi.ludiscan-api-client",
+  "version": "1.0.0",
+  "displayName": "Ludiscan API Client",
+  "description": "C# API client for Ludiscan player tracking service. Provides utilities for position logging, session management, and data export.",
+  "unity": "2022.2",
+  "author": {
+    "name": "Matuyuhi"
+  },
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.0.0"
+  },
+  "keywords": [
+    "api",
+    "ludiscan",
+    "client",
+    "game-tracking",
+    "rest-api"
+  ],
+  "category": "Networking",
+  "license": "MIT"
+}
