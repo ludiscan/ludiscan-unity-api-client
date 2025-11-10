@@ -1,8 +1,0 @@
-{
-  "library": "restsharp",
-  "optionalAssemblyInfo": true,
-  "optionalProjectFile": false,
-  "packageName": "Matuyuhi.LudiscanApi.Client",
-  "targetFramework": "netstandard2.1",
-  "validatable": true
-}
