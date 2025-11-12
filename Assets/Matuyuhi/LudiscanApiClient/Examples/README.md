@@ -100,19 +100,16 @@ Ludiscan API Clientの基本的な使い方を示すサンプルです。
 
 ## 統合例
 
-実際のゲームでは、これらのLoggerを組み合わせて使用します:
+実際のゲームでは、これらのLoggerを組み合わせて使用します。すべてのLoggerはシングルトンパターンで実装されています:
 
 ```csharp
 public class GameManager : MonoBehaviour
 {
     private Session currentSession;
-    private PositionLogger positionLogger;
-    private FieldObjectLogger fieldObjectLogger;
-    private GeneralEventLogger generalEventLogger;
 
     private async void Start()
     {
-        // 1. クライアント初期化
+        // 1. クライアント初期化（シングルトン）
         var config = new LudiscanClientConfig(apiBaseUrl, apiKey);
         LudiscanClient.Initialize(config);
 
@@ -122,25 +119,72 @@ public class GameManager : MonoBehaviour
         var sessionDto = await LudiscanClient.Instance.CreateSession(project, "My Session");
         currentSession = Session.FromDto(sessionDto);
 
-        // 3. Logger初期化
-        positionLogger = new PositionLogger(1000);
-        positionLogger.OnLogPosition = GetPlayerPositions;
-        positionLogger.StartLogging(250);
+        // 3. Logger初期化（すべてシングルトン）
+        PositionLogger.Initialize(1000);
+        PositionLogger.Instance.OnLogPosition = GetPlayerPositions;
+        PositionLogger.Instance.StartLogging(250);
 
-        fieldObjectLogger = new FieldObjectLogger(1000);
-        generalEventLogger = new GeneralEventLogger(2000);
+        FieldObjectLogger.Initialize(1000);
+        GeneralEventLogger.Initialize(2000);
+    }
+
+    // ゲーム内イベントの例
+    void OnEnemySpawned(string enemyId, Vector3 position)
+    {
+        // FieldObjectLoggerを使用してログ記録
+        var offsetTime = GetOffsetTimestamp();
+        FieldObjectLogger.Instance.LogEnemySpawn(enemyId, "goblin", position, offsetTime);
+    }
+
+    void OnPlayerDeath(int playerId, Vector3 position)
+    {
+        // GeneralEventLoggerを使用してログ記録
+        var metadata = new { death_cause = "enemy_collision" };
+        GeneralEventLogger.Instance.AddLog("death", metadata, GetOffsetTimestamp(), position, playerId);
     }
 
     private async void OnApplicationQuit()
     {
         // セッション終了時にログをアップロードして終了
-        await LudiscanClient.Instance.UploadPosition(currentSession, positionLogger.Buffer);
-        await LudiscanClient.Instance.UploadFieldObjectLogs(currentSession, fieldObjectLogger.GetLogsAndClear());
-        await LudiscanClient.Instance.UploadGeneralEventLogs(currentSession, generalEventLogger.GetLogsAndClear());
+        if (PositionLogger.IsInitialized)
+        {
+            await LudiscanClient.Instance.UploadPosition(currentSession, PositionLogger.Instance.Buffer);
+        }
+        if (FieldObjectLogger.IsInitialized)
+        {
+            await LudiscanClient.Instance.UploadFieldObjectLogs(currentSession, FieldObjectLogger.Instance.GetLogsAndClear());
+        }
+        if (GeneralEventLogger.IsInitialized)
+        {
+            await LudiscanClient.Instance.UploadGeneralEventLogs(currentSession, GeneralEventLogger.Instance.GetLogsAndClear());
+        }
         await LudiscanClient.Instance.FinishSession(currentSession);
+    }
+
+    private List<PositionEntry> GetPlayerPositions()
+    {
+        // プレイヤーの位置情報を返す
+        return new List<PositionEntry>
+        {
+            new PositionEntry { PlayerId = 0, Position = playerTransform.position }
+        };
+    }
+
+    private uint GetOffsetTimestamp()
+    {
+        // セッション開始からの経過時間をミリ秒で返す
+        // 実際の実装では、セッション開始時刻を記録しておく必要があります
+        return (uint)(Time.time * 1000);
     }
 }
 ```
+
+### シングルトンパターンのメリット
+
+- **グローバルアクセス**: どこからでも `Logger.Instance` でアクセス可能
+- **インスタンス管理不要**: `new` でインスタンスを作成する必要がない
+- **初期化チェック**: `IsInitialized` プロパティで初期化状態を確認可能
+- **一貫性**: LudiscanClient と同じパターンで統一された API
 
 ## 注意事項
 

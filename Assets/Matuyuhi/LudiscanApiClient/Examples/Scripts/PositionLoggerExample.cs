@@ -21,21 +21,20 @@ namespace LudiscanApiClient.Examples
         [SerializeField] private int recordIntervalMilliseconds = 250;
         [SerializeField] private int uploadIntervalSeconds = 10;
 
-        private PositionLogger positionLogger;
         private Session currentSession;
         private float uploadTimer;
         private bool isSessionActive = false;
 
         private void Start()
         {
-            // PositionLoggerの初期化
-            positionLogger = new PositionLogger(bufferSize);
+            // PositionLoggerの初期化（シングルトン）
+            PositionLogger.Initialize(bufferSize);
 
             // 位置取得コールバックの設定
-            positionLogger.OnLogPosition = GetPlayerPositions;
+            PositionLogger.Instance.OnLogPosition = GetPlayerPositions;
 
             // ロギング開始
-            positionLogger.StartLogging(recordIntervalMilliseconds);
+            PositionLogger.Instance.StartLogging(recordIntervalMilliseconds);
             Debug.Log($"PositionLogger started (interval: {recordIntervalMilliseconds}ms)");
 
             // セッション作成（簡略化のため、既にセッションが作成されていると仮定）
@@ -84,14 +83,14 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         private async Task UploadPositionData()
         {
-            if (!isSessionActive || !LudiscanClient.IsInitialized)
+            if (!isSessionActive || !LudiscanClient.IsInitialized || !PositionLogger.IsInitialized)
             {
                 return;
             }
 
             try
             {
-                var buffer = positionLogger.Buffer;
+                var buffer = PositionLogger.Instance.Buffer;
                 if (buffer == null || buffer.Length == 0)
                 {
                     Debug.Log("No position data to upload");
@@ -121,9 +120,9 @@ namespace LudiscanApiClient.Examples
         private void OnDestroy()
         {
             // ロギング停止
-            if (positionLogger != null)
+            if (PositionLogger.IsInitialized)
             {
-                positionLogger.StopLogging();
+                PositionLogger.Instance.StopLogging();
                 Debug.Log("PositionLogger stopped");
             }
         }
@@ -139,14 +138,16 @@ namespace LudiscanApiClient.Examples
         [ContextMenu("Toggle Logging")]
         private void ToggleLogging()
         {
-            if (positionLogger.IsLoggingStarted)
+            if (!PositionLogger.IsInitialized) return;
+
+            if (PositionLogger.Instance.IsLoggingStarted)
             {
-                positionLogger.StopLogging();
+                PositionLogger.Instance.StopLogging();
                 Debug.Log("Logging stopped");
             }
             else
             {
-                positionLogger.StartLogging(recordIntervalMilliseconds);
+                PositionLogger.Instance.StartLogging(recordIntervalMilliseconds);
                 Debug.Log("Logging started");
             }
         }

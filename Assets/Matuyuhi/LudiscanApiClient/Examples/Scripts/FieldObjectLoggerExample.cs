@@ -15,16 +15,13 @@ namespace LudiscanApiClient.Examples
         [Header("Logger Settings")]
         [SerializeField] private int initialCapacity = 1000;
 
-        private FieldObjectLogger fieldObjectLogger;
         private Session currentSession;
         private bool isSessionActive = false;
-        private long sessionStartTime;
 
         private void Start()
         {
-            // FieldObjectLoggerの初期化
-            fieldObjectLogger = new FieldObjectLogger(initialCapacity);
-            sessionStartTime = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            // FieldObjectLoggerの初期化（シングルトン）
+            FieldObjectLogger.Initialize(initialCapacity);
 
             Debug.Log("FieldObjectLogger initialized");
 
@@ -37,8 +34,10 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         private uint GetOffsetTimestamp()
         {
+            if (!FieldObjectLogger.IsInitialized) return 0;
+
             long currentTime = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            return (uint)(currentTime - sessionStartTime);
+            return (uint)(currentTime - FieldObjectLogger.Instance.SessionStartTime);
         }
 
         #region アイテム関連のイベント例
@@ -48,12 +47,12 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnItemSpawned(string itemId, string itemType, Vector3 position)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !FieldObjectLogger.IsInitialized) return;
 
             uint offsetTimestamp = GetOffsetTimestamp();
             var metadata = new { spawn_reason = "game_start" };
 
-            fieldObjectLogger.LogItemSpawn(itemId, itemType, position, offsetTimestamp, metadata);
+            FieldObjectLogger.Instance.LogItemSpawn(itemId, itemType, position, offsetTimestamp, metadata);
             Debug.Log($"Item spawned: {itemType} at {position}");
         }
 
@@ -62,10 +61,10 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnItemPickedUp(string itemId, string itemType, Vector3 position, int playerId)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !FieldObjectLogger.IsInitialized) return;
 
             uint offsetTimestamp = GetOffsetTimestamp();
-            fieldObjectLogger.LogItemDespawn(itemId, itemType, position, offsetTimestamp, playerId);
+            FieldObjectLogger.Instance.LogItemDespawn(itemId, itemType, position, offsetTimestamp, playerId);
             Debug.Log($"Item picked up: {itemType} by player {playerId}");
         }
 
@@ -74,10 +73,10 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnItemExpired(string itemId, string itemType, Vector3 position)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !FieldObjectLogger.IsInitialized) return;
 
             uint offsetTimestamp = GetOffsetTimestamp();
-            fieldObjectLogger.LogItemDespawn(itemId, itemType, position, offsetTimestamp);
+            FieldObjectLogger.Instance.LogItemDespawn(itemId, itemType, position, offsetTimestamp);
             Debug.Log($"Item expired: {itemType}");
         }
 
@@ -90,12 +89,12 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnEnemySpawned(string enemyId, string enemyType, Vector3 position)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !FieldObjectLogger.IsInitialized) return;
 
             uint offsetTimestamp = GetOffsetTimestamp();
             var metadata = new { difficulty = "normal", spawn_type = "wave" };
 
-            fieldObjectLogger.LogEnemySpawn(enemyId, enemyType, position, offsetTimestamp, metadata);
+            FieldObjectLogger.Instance.LogEnemySpawn(enemyId, enemyType, position, offsetTimestamp, metadata);
             Debug.Log($"Enemy spawned: {enemyType} at {position}");
         }
 
@@ -104,10 +103,10 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnEnemyMoved(string enemyId, string enemyType, Vector3 position)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !FieldObjectLogger.IsInitialized) return;
 
             uint offsetTimestamp = GetOffsetTimestamp();
-            fieldObjectLogger.LogEnemyMove(enemyId, enemyType, position, offsetTimestamp);
+            FieldObjectLogger.Instance.LogEnemyMove(enemyId, enemyType, position, offsetTimestamp);
         }
 
         /// <summary>
@@ -115,10 +114,10 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnEnemyDefeated(string enemyId, string enemyType, Vector3 position, int killedByPlayerId)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !FieldObjectLogger.IsInitialized) return;
 
             uint offsetTimestamp = GetOffsetTimestamp();
-            fieldObjectLogger.LogEnemyDeath(enemyId, enemyType, position, offsetTimestamp, killedByPlayerId);
+            FieldObjectLogger.Instance.LogEnemyDeath(enemyId, enemyType, position, offsetTimestamp, killedByPlayerId);
             Debug.Log($"Enemy defeated: {enemyType} by player {killedByPlayerId}");
         }
 
@@ -131,10 +130,10 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnObjectStateChanged(string objectId, string objectType, Vector3 position, object status)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !FieldObjectLogger.IsInitialized) return;
 
             uint offsetTimestamp = GetOffsetTimestamp();
-            fieldObjectLogger.LogObjectUpdate(objectId, objectType, position, offsetTimestamp, status);
+            FieldObjectLogger.Instance.LogObjectUpdate(objectId, objectType, position, offsetTimestamp, status);
             Debug.Log($"Object updated: {objectType}");
         }
 
@@ -145,7 +144,7 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public async Task UploadAndClearLogs()
         {
-            if (!isSessionActive || !LudiscanClient.IsInitialized)
+            if (!isSessionActive || !LudiscanClient.IsInitialized || !FieldObjectLogger.IsInitialized)
             {
                 Debug.LogWarning("Session not active or client not initialized");
                 return;
@@ -153,7 +152,7 @@ namespace LudiscanApiClient.Examples
 
             try
             {
-                var logs = fieldObjectLogger.GetLogsAndClear();
+                var logs = FieldObjectLogger.Instance.GetLogsAndClear();
                 if (logs.Length == 0)
                 {
                     Debug.Log("No field object logs to upload");
@@ -196,7 +195,7 @@ namespace LudiscanApiClient.Examples
         private void OnDestroy()
         {
             // セッション終了時に残っているログをアップロード
-            if (isSessionActive && fieldObjectLogger.LogCount > 0)
+            if (isSessionActive && FieldObjectLogger.IsInitialized && FieldObjectLogger.Instance.LogCount > 0)
             {
                 _ = UploadAndClearLogs();
             }

@@ -15,15 +15,14 @@ namespace LudiscanApiClient.Examples
         [SerializeField] private int initialCapacity = 2000;
         [SerializeField] private int defaultPlayerId = 0;
 
-        private GeneralEventLogger generalEventLogger;
         private Session currentSession;
         private bool isSessionActive = false;
         private long sessionStartTime;
 
         private void Start()
         {
-            // GeneralEventLoggerの初期化
-            generalEventLogger = new GeneralEventLogger(initialCapacity);
+            // GeneralEventLoggerの初期化（シングルトン）
+            GeneralEventLogger.Initialize(initialCapacity);
             sessionStartTime = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
             Debug.Log("GeneralEventLogger initialized");
@@ -48,7 +47,7 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnPlayerSpawned(int playerId, Vector3 position)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !GeneralEventLogger.IsInitialized) return;
 
             var metadata = new
             {
@@ -56,7 +55,7 @@ namespace LudiscanApiClient.Examples
                 is_respawn = false
             };
 
-            generalEventLogger.AddLog(
+            GeneralEventLogger.Instance.AddLog(
                 "player_spawn",
                 metadata,
                 GetOffsetTimestamp(),
@@ -72,7 +71,7 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnPlayerRespawned(int playerId, Vector3 position, string deathReason)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !GeneralEventLogger.IsInitialized) return;
 
             var metadata = new
             {
@@ -81,7 +80,7 @@ namespace LudiscanApiClient.Examples
                 death_reason = deathReason
             };
 
-            generalEventLogger.AddLog(
+            GeneralEventLogger.Instance.AddLog(
                 "player_spawn",
                 metadata,
                 GetOffsetTimestamp(),
@@ -97,7 +96,7 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnPlayerDeath(int playerId, Vector3 position, string deathCause)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !GeneralEventLogger.IsInitialized) return;
 
             var metadata = new
             {
@@ -105,7 +104,7 @@ namespace LudiscanApiClient.Examples
                 lives_remaining = 2
             };
 
-            generalEventLogger.AddLog(
+            GeneralEventLogger.Instance.AddLog(
                 "death",
                 metadata,
                 GetOffsetTimestamp(),
@@ -125,7 +124,7 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnGamePhaseChanged(string fromPhase, string toPhase, Vector3 position)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !GeneralEventLogger.IsInitialized) return;
 
             var metadata = new
             {
@@ -134,7 +133,7 @@ namespace LudiscanApiClient.Examples
                 elapsed_time = Time.time
             };
 
-            generalEventLogger.AddLog(
+            GeneralEventLogger.Instance.AddLog(
                 "game_phase_changed",
                 metadata,
                 GetOffsetTimestamp(),
@@ -150,7 +149,7 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnScoreMilestone(int playerId, Vector3 position, int currentScore, int milestone)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !GeneralEventLogger.IsInitialized) return;
 
             var metadata = new
             {
@@ -159,7 +158,7 @@ namespace LudiscanApiClient.Examples
                 milestone_type = "score_reached"
             };
 
-            generalEventLogger.AddLog(
+            GeneralEventLogger.Instance.AddLog(
                 "score_milestone",
                 metadata,
                 GetOffsetTimestamp(),
@@ -175,7 +174,7 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnPlayerSuccess(int playerId, Vector3 position, float completionTime)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !GeneralEventLogger.IsInitialized) return;
 
             var metadata = new
             {
@@ -183,7 +182,7 @@ namespace LudiscanApiClient.Examples
                 ranking = 1
             };
 
-            generalEventLogger.AddLog(
+            GeneralEventLogger.Instance.AddLog(
                 "success",
                 metadata,
                 GetOffsetTimestamp(),
@@ -203,7 +202,7 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnItemCollected(int playerId, Vector3 position, string itemType)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !GeneralEventLogger.IsInitialized) return;
 
             var metadata = new
             {
@@ -211,7 +210,7 @@ namespace LudiscanApiClient.Examples
                 collect_method = "pickup"
             };
 
-            generalEventLogger.AddLog(
+            GeneralEventLogger.Instance.AddLog(
                 "get_hand_change_item",
                 metadata,
                 GetOffsetTimestamp(),
@@ -227,7 +226,7 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnDashItemUsed(int playerId, Vector3 position, string direction)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !GeneralEventLogger.IsInitialized) return;
 
             var metadata = new
             {
@@ -235,7 +234,7 @@ namespace LudiscanApiClient.Examples
                 dash_distance = 5.0f
             };
 
-            generalEventLogger.AddLog(
+            GeneralEventLogger.Instance.AddLog(
                 "use_dash_item",
                 metadata,
                 GetOffsetTimestamp(),
@@ -251,7 +250,7 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnHandChanged(int playerId, Vector3 position, string fromHand, string toHand)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !GeneralEventLogger.IsInitialized) return;
 
             var metadata = new
             {
@@ -260,7 +259,7 @@ namespace LudiscanApiClient.Examples
                 change_reason = "item_pickup"
             };
 
-            generalEventLogger.AddLog(
+            GeneralEventLogger.Instance.AddLog(
                 "hand_changed",
                 metadata,
                 GetOffsetTimestamp(),
@@ -280,7 +279,7 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnCollisionAttempt(int playerId, Vector3 position, string targetType, bool success)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !GeneralEventLogger.IsInitialized) return;
 
             var metadata = new
             {
@@ -289,7 +288,7 @@ namespace LudiscanApiClient.Examples
                 player_velocity = 10.5f
             };
 
-            generalEventLogger.AddLog(
+            GeneralEventLogger.Instance.AddLog(
                 "collision_attempt",
                 metadata,
                 GetOffsetTimestamp(),
@@ -305,7 +304,7 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public void OnPlayerCatch(int playerId, Vector3 position, string enemyType)
         {
-            if (!isSessionActive) return;
+            if (!isSessionActive || !GeneralEventLogger.IsInitialized) return;
 
             var metadata = new
             {
@@ -313,7 +312,7 @@ namespace LudiscanApiClient.Examples
                 catch_method = "collision"
             };
 
-            generalEventLogger.AddLog(
+            GeneralEventLogger.Instance.AddLog(
                 "player_catch",
                 metadata,
                 GetOffsetTimestamp(),
@@ -331,7 +330,7 @@ namespace LudiscanApiClient.Examples
         /// </summary>
         public async Task UploadAndClearLogs()
         {
-            if (!isSessionActive || !LudiscanClient.IsInitialized)
+            if (!isSessionActive || !LudiscanClient.IsInitialized || !GeneralEventLogger.IsInitialized)
             {
                 Debug.LogWarning("Session not active or client not initialized");
                 return;
@@ -339,7 +338,7 @@ namespace LudiscanApiClient.Examples
 
             try
             {
-                var logs = generalEventLogger.GetLogsAndClear();
+                var logs = GeneralEventLogger.Instance.GetLogsAndClear();
                 if (logs.Length == 0)
                 {
                     Debug.Log("No general event logs to upload");
@@ -385,7 +384,7 @@ namespace LudiscanApiClient.Examples
         private void OnDestroy()
         {
             // セッション終了時に残っているログをアップロード
-            if (isSessionActive && generalEventLogger.LogCount > 0)
+            if (isSessionActive && GeneralEventLogger.IsInitialized && GeneralEventLogger.Instance.LogCount > 0)
             {
                 _ = UploadAndClearLogs();
             }
