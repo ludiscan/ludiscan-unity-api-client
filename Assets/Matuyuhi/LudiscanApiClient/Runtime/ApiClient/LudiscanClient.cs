@@ -10,12 +10,21 @@ using UnityEngine;
 
 namespace LudiscanApiClient.Runtime.ApiClient
 {
+    /// <summary>
+    /// Ludiscan APIと通信するためのクライアントクラス
+    /// シングルトンパターンで実装されており、Initialize()で初期化後、Instanceプロパティでアクセスします
+    /// </summary>
     public partial class LudiscanClient
     {
         private static ApiClient.LudiscanClient _instance;
 
         private LudiscanClientConfig config;
 
+        /// <summary>
+        /// LudiscanClientのシングルトンインスタンスを取得します
+        /// Initialize()で初期化されていない場合は例外をスローします
+        /// </summary>
+        /// <exception cref="InvalidOperationException">クライアントが初期化されていない場合</exception>
         public static ApiClient.LudiscanClient Instance
         {
             get
@@ -44,8 +53,9 @@ namespace LudiscanApiClient.Runtime.ApiClient
         }
 
         /// <summary>
-        /// 初期化済みかどうかを確認します
+        /// LudiscanClientが初期化済みかどうかを確認します
         /// </summary>
+        /// <returns>初期化済みの場合はtrue、未初期化の場合はfalse</returns>
         public static bool IsInitialized => _instance != null;
         private readonly AppApi defaultApi;
         private readonly GameClientAPIApi api;
@@ -87,6 +97,10 @@ namespace LudiscanApiClient.Runtime.ApiClient
             };
         }
 
+        /// <summary>
+        /// Ludiscan APIへの接続をテストします
+        /// </summary>
+        /// <returns>接続が成功した場合はtrue、失敗した場合はfalse</returns>
         public async Task<bool> Ping()
         {
             try
@@ -101,6 +115,11 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
+        /// <summary>
+        /// アクセス可能なプロジェクト一覧を取得します
+        /// </summary>
+        /// <returns>プロジェクトのリスト</returns>
+        /// <exception cref="ApiException">API呼び出しが失敗した場合</exception>
         public async Task<List<ProjectResponseDto>> GetProjects()
         {
             try
@@ -115,6 +134,13 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
+        /// <summary>
+        /// 新しいプレイセッションを作成します
+        /// </summary>
+        /// <param name="_project">セッションを作成するプロジェクト</param>
+        /// <param name="_name">セッション名</param>
+        /// <returns>作成されたセッション情報</returns>
+        /// <exception cref="ApiException">API呼び出しが失敗した場合</exception>
         public async Task<PlaySessionResponseDto> CreateSession(IProject _project, string _name)
         {
             try
@@ -136,6 +162,12 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
+        /// <summary>
+        /// プレイヤーの位置情報をアップロードします
+        /// </summary>
+        /// <param name="_session">対象のセッション</param>
+        /// <param name="_position">アップロードする位置情報の配列</param>
+        /// <exception cref="Exception">アップロードが失敗した場合</exception>
         public async Task UploadPosition(Session _session, PositionEntry[] _position)
         {
             try
@@ -154,6 +186,12 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
+        /// <summary>
+        /// フィールドオブジェクト（アイテム、敵など）のログをアップロードします
+        /// </summary>
+        /// <param name="_session">対象のセッション</param>
+        /// <param name="_entries">アップロードするフィールドオブジェクトログの配列</param>
+        /// <exception cref="Exception">アップロードが失敗した場合</exception>
         public async Task UploadFieldObjectLogs(Session _session, FieldObjectEntity[] _entries)
         {
             try
@@ -180,6 +218,12 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
+        /// <summary>
+        /// 一般イベントログをアップロードします
+        /// </summary>
+        /// <param name="_session">対象のセッション</param>
+        /// <param name="_entries">アップロードする一般イベントログの配列</param>
+        /// <exception cref="Exception">アップロードが失敗した場合</exception>
         public async Task UploadGeneralEventLogs(Session _session, GeneralEventEntity[] _entries)
         {
             try
@@ -208,6 +252,12 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
+        /// <summary>
+        /// セッションを終了します
+        /// </summary>
+        /// <param name="_session">終了するセッション</param>
+        /// <returns>更新されたセッション情報</returns>
+        /// <exception cref="Exception">セッション終了が失敗した場合</exception>
         public async Task<Session> FinishSession(Session _session)
         {
             try
@@ -225,6 +275,13 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
+        /// <summary>
+        /// セッションのマップ名を更新します
+        /// </summary>
+        /// <param name="_session">対象のセッション</param>
+        /// <param name="_mapName">設定するマップ名</param>
+        /// <returns>更新されたセッション情報</returns>
+        /// <exception cref="Exception">更新が失敗した場合</exception>
         public async Task<Session> PutMapName(Session _session, string _mapName)
         {
             try
@@ -244,6 +301,13 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
+        /// <summary>
+        /// セッションのスコアを更新します
+        /// </summary>
+        /// <param name="_session">対象のセッション</param>
+        /// <param name="_score">設定するスコア</param>
+        /// <returns>更新されたセッション情報</returns>
+        /// <exception cref="Exception">更新が失敗した場合</exception>
         public async Task<Session> PutScore(Session _session, int _score)
         {
             try
@@ -263,20 +327,36 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
+        /// <summary>
+        /// 一般イベントのログタイプ
+        /// PascalCase形式で定義されており、内部的にsnake_caseに変換されます
+        /// </summary>
         public enum GeneralLogType
         {
+            /// <summary>プレイヤーが敵を捕まえた</summary>
             PlayerCatch,
+            /// <summary>手を変えるアイテムを取得した</summary>
             GetHandChangeItem,
+            /// <summary>ダッシュアイテムを取得した</summary>
             GetDashItem,
+            /// <summary>ダッシュアイテムを使用した</summary>
             UseDashItem,
+            /// <summary>プレイヤーが死亡した</summary>
             Death,
+            /// <summary>プレイヤーがゴールに到達した</summary>
             Success,
-            PlayerSpawn,      // NEW: Tier 1 - Player spawn/respawn event
-            HandSelected,     // NEW: Tier 1 - Player hand selection
-            GamePhaseChanged, // NEW: Tier 1 - Game state transition
-            CollisionAttempt, // NEW: Tier 2 - Enemy collision event
-            ScoreMilestone,   // NEW: Tier 2 - Score change event
-            HandChanged,      // NEW: Tier 2 - Hand change event
+            /// <summary>プレイヤーがスポーン/リスポーンした</summary>
+            PlayerSpawn,
+            /// <summary>プレイヤーの手が選択された</summary>
+            HandSelected,
+            /// <summary>ゲームフェーズが変更された</summary>
+            GamePhaseChanged,
+            /// <summary>敵との衝突を試みた</summary>
+            CollisionAttempt,
+            /// <summary>スコアマイルストーンに到達した</summary>
+            ScoreMilestone,
+            /// <summary>プレイヤーの手が変更された</summary>
+            HandChanged,
         }
 
         /// <summary>
