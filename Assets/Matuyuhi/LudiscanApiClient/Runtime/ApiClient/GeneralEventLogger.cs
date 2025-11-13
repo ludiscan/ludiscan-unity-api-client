@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LudiscanApiClient.Runtime.ApiClient.Model;
 using UnityEngine;
@@ -6,13 +7,55 @@ namespace LudiscanApiClient.Runtime.ApiClient
 {
     /// <summary>
     /// 一般イベントログを管理するクラス
+    /// シングルトンパターンで実装されており、Initialize()で初期化後、Instanceプロパティでアクセスします
     /// RouteCoach 拡張イベント（player_spawn, collision_attempt, score_milestone など）を
     /// バッファに蓄積し、セッション終了時にまとめてアップロード
     /// </summary>
     public class GeneralEventLogger
     {
+        private static GeneralEventLogger _instance;
+
         private List<GeneralEventEntity> buffer;
         private readonly object lockObject = new object();
+
+        /// <summary>
+        /// GeneralEventLoggerのシングルトンインスタンスを取得します
+        /// Initialize()で初期化されていない場合は例外をスローします
+        /// </summary>
+        /// <exception cref="InvalidOperationException">ロガーが初期化されていない場合</exception>
+        public static GeneralEventLogger Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    throw new InvalidOperationException(
+                        "GeneralEventLogger is not initialized. Call Initialize(int initialCapacity) first."
+                    );
+                }
+                return _instance;
+            }
+        }
+
+        /// <summary>
+        /// GeneralEventLoggerが初期化済みかどうかを確認します
+        /// </summary>
+        /// <returns>初期化済みの場合はtrue、未初期化の場合はfalse</returns>
+        public static bool IsInitialized => _instance != null;
+
+        /// <summary>
+        /// GeneralEventLoggerを初期化します
+        /// 既に初期化されている場合は警告を出力して再初期化します
+        /// </summary>
+        /// <param name="initialCapacity">バッファの初期容量（デフォルト: 2000）</param>
+        public static void Initialize(int initialCapacity = 2000)
+        {
+            if (_instance != null)
+            {
+                Debug.LogWarning("GeneralEventLogger is already initialized. Reinitializing...");
+            }
+            _instance = new GeneralEventLogger(initialCapacity);
+        }
 
         /// <summary>
         /// ログ数
@@ -28,7 +71,11 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
-        public GeneralEventLogger(int initialCapacity = 2000)
+        /// <summary>
+        /// プライベートコンストラクタ
+        /// </summary>
+        /// <param name="initialCapacity">バッファの初期容量</param>
+        private GeneralEventLogger(int initialCapacity = 2000)
         {
             buffer = new List<GeneralEventEntity>(initialCapacity);
         }

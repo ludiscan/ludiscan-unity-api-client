@@ -1,0 +1,101 @@
+name: Release on Tag
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: extract_version
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG_NAME#v}
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Tag: $TAG_NAME"
+          echo "Version: $VERSION"
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          VERSION="${{ steps.extract_version.outputs.version }}"
+
+          # Get previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+
+          # Get commits since previous tag
+          if [ -n "$PREV_TAG" ]; then
+            echo "Comparing $PREV_TAG..HEAD"
+            COMMITS=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          else
+            echo "No previous tag found, showing last 20 commits"
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -20)
+          fi
+
+          # Create release notes
+          cat > release_notes.md << EOF
+          ## Ludiscan Unity API Client v$VERSION
+
+          ### Changes
+
+          $COMMITS
+
+          ### Installation
+
+          #### Via Git URL (Unity Package Manager)
+
+          1. Open Unity Package Manager (Window > Package Manager)
+          2. Click the + button and select "Add package from git URL"
+          3. Enter: \`https://github.com/ludiscan/ludiscan-unity-api-client.git#v$VERSION\`
+
+          #### Via package.json
+
+          Add to your \`Packages/manifest.json\`:
+
+          \`\`\`json
+          {
+            "dependencies": {
+              "com.matuyuhi.ludiscan-api-client": "https://github.com/ludiscan/ludiscan-unity-api-client.git#v$VERSION"
+            }
+          }
+          \`\`\`
+
+          ### Documentation
+
+          See [README.md](https://github.com/ludiscan/ludiscan-unity-api-client#readme) for usage instructions.
+          EOF
+
+          cat release_notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.extract_version.outputs.tag }}
+          name: Release ${{ steps.extract_version.outputs.tag }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          VERSION="${{ steps.extract_version.outputs.version }}"
+          echo "## Release Created! 🎉" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: v$VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: ${{ steps.extract_version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The release has been published!" >> $GITHUB_STEP_SUMMARY
