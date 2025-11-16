@@ -8,13 +8,55 @@ namespace LudiscanApiClient.Runtime.ApiClient
 {
     /// <summary>
     /// フィールドオブジェクトのログを管理するクラス
+    /// シングルトンパターンで実装されており、Initialize()で初期化後、Instanceプロパティでアクセスします
     /// イベント発生時に AddLog() を呼び出してバッファに蓄積し、
     /// セッション終了時に GetLogsAndClear() でアップロード
     /// </summary>
     public class FieldObjectLogger
     {
+        private static FieldObjectLogger _instance;
+
         private List<FieldObjectEntity> buffer;
         private readonly object lockObject = new object();
+
+        /// <summary>
+        /// FieldObjectLoggerのシングルトンインスタンスを取得します
+        /// Initialize()で初期化されていない場合は例外をスローします
+        /// </summary>
+        /// <exception cref="InvalidOperationException">ロガーが初期化されていない場合</exception>
+        public static FieldObjectLogger Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    throw new InvalidOperationException(
+                        "FieldObjectLogger is not initialized. Call Initialize(int initialCapacity) first."
+                    );
+                }
+                return _instance;
+            }
+        }
+
+        /// <summary>
+        /// FieldObjectLoggerが初期化済みかどうかを確認します
+        /// </summary>
+        /// <returns>初期化済みの場合はtrue、未初期化の場合はfalse</returns>
+        public static bool IsInitialized => _instance != null;
+
+        /// <summary>
+        /// FieldObjectLoggerを初期化します
+        /// 既に初期化されている場合は警告を出力して再初期化します
+        /// </summary>
+        /// <param name="initialCapacity">バッファの初期容量（デフォルト: 1000）</param>
+        public static void Initialize(int initialCapacity = 1000)
+        {
+            if (_instance != null)
+            {
+                Debug.LogWarning("FieldObjectLogger is already initialized. Reinitializing...");
+            }
+            _instance = new FieldObjectLogger(initialCapacity);
+        }
 
         /// <summary>
         /// セッション開始時刻（Unix time milliseconds）
@@ -35,7 +77,11 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
-        public FieldObjectLogger(int initialCapacity = 1000)
+        /// <summary>
+        /// プライベートコンストラクタ
+        /// </summary>
+        /// <param name="initialCapacity">バッファの初期容量</param>
+        private FieldObjectLogger(int initialCapacity = 1000)
         {
             buffer = new List<FieldObjectEntity>(initialCapacity);
             SessionStartTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();

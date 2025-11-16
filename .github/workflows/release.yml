@@ -1,0 +1,170 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get current version
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(grep -oP '(?<="version": ")[^"]*' Assets/Matuyuhi/LudiscanApiClient/package.json)
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Calculate new version
+        id: new_version
+        run: |
+          CURRENT_VERSION="${{ steps.current_version.outputs.version }}"
+          VERSION_TYPE="${{ github.event.inputs.version_type }}"
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+
+          case $VERSION_TYPE in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+      - name: Update package.json
+        run: |
+          CURRENT_VERSION="${{ steps.current_version.outputs.version }}"
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+
+          sed -i "s/\"version\": \"$CURRENT_VERSION\"/\"version\": \"$NEW_VERSION\"/" Assets/Matuyuhi/LudiscanApiClient/package.json
+
+          echo "Updated package.json:"
+          grep "version" Assets/Matuyuhi/LudiscanApiClient/package.json
+
+      - name: Commit version bump
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+
+          git add Assets/Matuyuhi/LudiscanApiClient/package.json
+          git commit -m "chore: bump version to $NEW_VERSION"
+          git push origin ${{ github.ref_name }}
+
+      - name: Create and push tag
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          TAG_NAME="v$NEW_VERSION"
+
+          git tag -a "$TAG_NAME" -m "Release $NEW_VERSION"
+          git push origin "$TAG_NAME"
+
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+        id: create_tag
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          CURRENT_VERSION="${{ steps.current_version.outputs.version }}"
+
+          # Get commits since last tag (if exists)
+          if git describe --tags --abbrev=0 2>/dev/null; then
+            PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+            if [ -n "$PREV_TAG" ]; then
+              COMMITS=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
+            else
+              COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -10)
+            fi
+          else
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -10)
+          fi
+
+          # Create release notes
+          cat > release_notes.md << EOF
+          ## Ludiscan Unity API Client v$NEW_VERSION
+
+          ### Changes
+
+          $COMMITS
+
+          ### Installation
+
+          #### Via Git URL (Unity Package Manager)
+
+          1. Open Unity Package Manager (Window > Package Manager)
+          2. Click the + button and select "Add package from git URL"
+          3. Enter: \`https://github.com/ludiscan/ludiscan-unity-api-client.git#v$NEW_VERSION\`
+
+          #### Via package.json
+
+          Add to your \`Packages/manifest.json\`:
+
+          \`\`\`json
+          {
+            "dependencies": {
+              "com.matuyuhi.ludiscan-api-client": "https://github.com/ludiscan/ludiscan-unity-api-client.git#v$NEW_VERSION"
+            }
+          }
+          \`\`\`
+
+          ### Documentation
+
+          See [README.md](https://github.com/ludiscan/ludiscan-unity-api-client#readme) for usage instructions.
+          EOF
+
+          echo "Release notes generated"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.new_version.outputs.version }}
+          name: Release v${{ steps.new_version.outputs.version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          echo "## Release Created Successfully! 🎉" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: v$NEW_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- **Type**: ${{ github.event.inputs.version_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: v$NEW_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The release has been published and is now available!" >> $GITHUB_STEP_SUMMARY

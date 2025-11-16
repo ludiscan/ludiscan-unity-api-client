@@ -5,24 +5,89 @@ using LudiscanApiClient.Runtime.ApiClient.Model;
 
 namespace LudiscanApiClient.Runtime.ApiClient
 {
+    /// <summary>
+    /// プレイヤーの位置情報を定期的に記録するロガークラス
+    /// シングルトンパターンで実装されており、Initialize()で初期化後、Instanceプロパティでアクセスします
+    /// リングバッファを使用して位置情報を蓄積し、定期的にアップロードすることを想定しています
+    /// </summary>
     public class PositionLogger
     {
-        private int writeIndex;
-        PositionEntry[] buffer;
+        private static PositionLogger _instance;
 
-        public PositionEntry[] Buffer => buffer;
+        private int writeIndex;
+        private PositionEntry[] buffer;
         private int recordIntervalMilli;
 
+        /// <summary>
+        /// PositionLoggerのシングルトンインスタンスを取得します
+        /// Initialize()で初期化されていない場合は例外をスローします
+        /// </summary>
+        /// <exception cref="InvalidOperationException">ロガーが初期化されていない場合</exception>
+        public static PositionLogger Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    throw new InvalidOperationException(
+                        "PositionLogger is not initialized. Call Initialize(int bufferSize) first."
+                    );
+                }
+                return _instance;
+            }
+        }
+
+        /// <summary>
+        /// PositionLoggerが初期化済みかどうかを確認します
+        /// </summary>
+        /// <returns>初期化済みの場合はtrue、未初期化の場合はfalse</returns>
+        public static bool IsInitialized => _instance != null;
+
+        /// <summary>
+        /// PositionLoggerを初期化します
+        /// 既に初期化されている場合は警告を出力して再初期化します
+        /// </summary>
+        /// <param name="_bufferSize">リングバッファのサイズ</param>
+        public static void Initialize(int _bufferSize)
+        {
+            if (_instance != null)
+            {
+                UnityEngine.Debug.LogWarning("PositionLogger is already initialized. Reinitializing...");
+            }
+            _instance = new PositionLogger(_bufferSize);
+        }
+
+        /// <summary>
+        /// 位置情報のバッファを取得します
+        /// </summary>
+        public PositionEntry[] Buffer => buffer;
+
+        /// <summary>
+        /// ロギングが開始されているかどうかを取得します
+        /// </summary>
         public bool IsLoggingStarted { get; private set; }
 
+        /// <summary>
+        /// 位置情報を取得するためのコールバック関数
+        /// このコールバックは定期的に呼び出され、現在のプレイヤー位置を返す必要があります
+        /// </summary>
         public Func<List<PositionEntry>> OnLogPosition { get; set; }
-        public PositionLogger(int _bufferSize)
+
+        /// <summary>
+        /// プライベートコンストラクタ
+        /// </summary>
+        /// <param name="_bufferSize">リングバッファのサイズ</param>
+        private PositionLogger(int _bufferSize)
         {
             buffer = new PositionEntry[_bufferSize];
             writeIndex = 0;
             IsLoggingStarted = false;
         }
 
+        /// <summary>
+        /// 位置情報のロギングを開始します
+        /// </summary>
+        /// <param name="_recordIntervalMilli">記録間隔（ミリ秒）</param>
         public void StartLogging(int _recordIntervalMilli)
         {
             if (IsLoggingStarted)
@@ -34,6 +99,9 @@ namespace LudiscanApiClient.Runtime.ApiClient
             _ = Logging();
         }
 
+        /// <summary>
+        /// 位置情報のロギングを停止します
+        /// </summary>
         public void StopLogging()
         {
             if (!IsLoggingStarted)
