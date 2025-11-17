@@ -1,15 +1,17 @@
 # Ludiscan API Client for Unity
 
-A C# API client package for integrating Ludiscan player tracking and position logging into Unity games. Provides high-level APIs for session management, position tracking, and event logging.
+A C# API client package for integrating Ludiscan player tracking and position logging into Unity games.
 
-## Features
+[![Unity Version](https://img.shields.io/badge/Unity-2022.2%2B-blue)](https://unity.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-- **Position Logging**: Track player positions (X, Y, Z coordinates) in real-time
-- **Session Management**: Create and manage game sessions with automatic tracking
-- **Event Logging**: Log custom game events and general gameplay events
-- **Field Object Tracking**: Track field objects and game state
-- **Project-based Tracking**: Organize tracking data by game projects
-- **Async Support**: Full async/await support for network operations
+## Overview
+
+This package provides high-level APIs for:
+- **Session Management** - Create and manage game sessions
+- **Position Logging** - Track player positions in real-time with automatic buffering
+- **Event Logging** - Log custom game events
+- **Field Object Tracking** - Track items, enemies, and other game objects
 
 ## Installation
 
@@ -27,78 +29,149 @@ Add this to your `Packages/manifest.json`:
 ```
 
 Or use the Package Manager UI in Unity:
-- Go to `Window > Package Manager`
-- Click the `+` button and select `Add package from git URL`
-- Enter: `https://github.com/ludiscan/ludiscan-unity-api-client.git?path=Assets/Matuyuhi/LudiscanApiClient`
-
-For detailed installation instructions, see [INSTALL.md](Assets/Matuyuhi/LudiscanApiClient/INSTALL.md).
+1. Go to `Window > Package Manager`
+2. Click the `+` button and select `Add package from git URL`
+3. Enter: `https://github.com/ludiscan/ludiscan-unity-api-client.git?path=Assets/Matuyuhi/LudiscanApiClient`
 
 ## Quick Start
 
-### 1. Initialize the Client
-
 ```csharp
-using Matuyuhi.LudiscanApi.Client;
+using LudiscanApiClient.Runtime.ApiClient;
+using LudiscanApiClient.Runtime.ApiClient.Model;
+using UnityEngine;
 
-var config = new LudiscanClientConfig
+public class GameManager : MonoBehaviour
 {
-    ApiBaseUrl = "http://localhost:3000",
-    ProjectId = "your-project-id"
-};
+    private Session currentSession;
 
-var client = new LudiscanClient(config);
-```
+    private async void Start()
+    {
+        // 1. Initialize client
+        var config = new LudiscanClientConfig("https://ludiscan.net/api", "your-api-key")
+        {
+            TimeoutSeconds = 10
+        };
+        LudiscanClient.Initialize(config);
 
-### 2. Log Player Positions
+        // 2. Create session
+        var project = new Project { ProjectId = "your-project-id" };
+        var sessionDto = await LudiscanClient.Instance.CreateSession(project, "Game Session");
+        currentSession = Session.FromDto(sessionDto);
 
-```csharp
-var positionLogger = new PositionLogger(client, sessionId);
+        // 3. Initialize loggers
+        PositionLogger.Initialize(1000);
+        GeneralEventLogger.Initialize(2000);
+        FieldObjectLogger.Initialize(1000);
+    }
 
-await positionLogger.LogPositionAsync(
-    playerId: 1,
-    x: 10.5f,
-    y: 20.3f,
-    z: 0.0f,
-    timestamp: DateTime.UtcNow
-);
-```
-
-### 3. Log Game Events
-
-```csharp
-var eventLogger = new GeneralEventLogger(client, sessionId);
-
-await eventLogger.LogEventAsync(new GeneralEventEntity
-{
-    EventType = "player_died",
-    EventData = new Dictionary<string, object> { { "playerId", 1 } },
-    Timestamp = DateTime.UtcNow
-});
+    private async void OnApplicationQuit()
+    {
+        if (currentSession != null && currentSession.IsActive)
+        {
+            await LudiscanClient.Instance.FinishSession(currentSession);
+        }
+    }
+}
 ```
 
 ## Documentation
 
-- [Full README](Assets/Matuyuhi/LudiscanApiClient/README.md) - Comprehensive guide with API reference
-- [Installation Guide](Assets/Matuyuhi/LudiscanApiClient/INSTALL.md) - Detailed installation methods and troubleshooting
-- [Changelog](Assets/Matuyuhi/LudiscanApiClient/CHANGELOG.md) - Version history and release notes
+**📖 For detailed implementation guide, API reference, and complete examples:**
 
-## Dependencies
+**See [Package README](Assets/Matuyuhi/LudiscanApiClient/README.md)** - Complete documentation including:
+- Minimal implementation example
+- Complete game loop implementation (GameManager, PlayerController, ItemManager)
+- Detailed API reference for all loggers
+- Common event types reference
+- Best practices and troubleshooting
 
-This package includes and requires:
-- **RestSharp** (v107.3.0) - HTTP client library
-- **Polly** - Resilience and transient-fault-handling library
-- **Newtonsoft.Json** - JSON serialization (via `com.unity.nuget.newtonsoft-json`)
+**Additional Resources:**
+- [Installation Guide](Assets/Matuyuhi/LudiscanApiClient/INSTALL.md) - Detailed installation and troubleshooting
+- [Changelog](Assets/Matuyuhi/LudiscanApiClient/CHANGELOG.md) - Version history
+
+## Features
+
+### Position Logging
+```csharp
+PositionLogger.Instance.OnLogPosition = GetAllPlayerPositions;
+PositionLogger.Instance.StartLogging(250); // 250ms interval
+```
+
+### Event Logging
+```csharp
+GeneralEventLogger.Instance.AddLog(
+    "player_spawn",
+    metadata: new { spawn_point = "start" },
+    offsetTimestamp: GetOffsetTimestamp(),
+    position: transform.position,
+    playerId: 0
+);
+```
+
+### Field Object Tracking
+```csharp
+FieldObjectLogger.Instance.LogItemSpawn(
+    itemId: "item_001",
+    itemType: "health_potion",
+    position: Vector3.zero,
+    offsetTimestamp: GetOffsetTimestamp(),
+    metadata: new { spawn_reason = "game_start" }
+);
+```
 
 ## Requirements
 
 - Unity 2022.2 or later
-- Ludiscan backend API server running and accessible
+- .NET Standard 2.1 compatible
+- Ludiscan backend API server
+
+## Dependencies
+
+All dependencies are included in the package:
+- RestSharp (v107.3.0) - HTTP client
+- Polly - Resilience and fault-handling
+- Newtonsoft.Json - JSON serialization (via `com.unity.nuget.newtonsoft-json`)
+
+## Development
+
+### Package Structure
+
+```
+ludiscan-unity-api-client/
+├── Assets/Matuyuhi/LudiscanApiClient/    # Unity Package
+│   ├── Runtime/
+│   │   ├── ApiClient/                     # Client code
+│   │   └── Plugins/                       # DLL dependencies
+│   ├── Examples/                          # Sample scripts
+│   ├── README.md                          # 📖 Complete documentation
+│   └── package.json
+├── README.md                              # This file (quick reference)
+└── Makefile                               # Build tools
+```
+
+### Regenerating API Client
+
+If the Ludiscan backend API changes:
+
+```bash
+# Start Ludiscan API on port 3211
+cd ludiscan-v0-api
+npm run start:dev
+
+# Generate new client
+cd ludiscan-unity-api-client
+make gen
+```
+
+**Prerequisites:**
+- `openapi-generator-cli` installed
+- .NET 6+ SDK with `dotnet` CLI
+- Swagger JSON accessible at `http://localhost:3211/swagger/api/v0/json`
 
 ## Support
 
-For issues, questions, or feature requests:
 - [GitHub Issues](https://github.com/ludiscan/ludiscan-unity-api-client/issues)
-- [Ludiscan Documentation](https://ludiscan.example.com/docs)
+- [Ludiscan Documentation](https://ludiscan.net/docs)
 
 ## License
 
@@ -106,10 +179,12 @@ MIT License - see [LICENSE](Assets/Matuyuhi/LudiscanApiClient/LICENSE) for detai
 
 ## Contributing
 
-To contribute improvements to this package:
-
 1. Clone the repository
-2. Make your changes
+2. Make your changes in a feature branch
 3. Test with a local Unity project
 4. Regenerate API client if needed: `make gen`
 5. Submit a pull request
+
+---
+
+**For complete implementation guide and detailed examples, see [Assets/Matuyuhi/LudiscanApiClient/README.md](Assets/Matuyuhi/LudiscanApiClient/README.md)**
