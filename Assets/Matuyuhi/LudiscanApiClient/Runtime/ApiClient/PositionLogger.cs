@@ -47,14 +47,14 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// PositionLoggerを初期化します
         /// 既に初期化されている場合は警告を出力して再初期化します
         /// </summary>
-        /// <param name="_bufferSize">リングバッファのサイズ</param>
-        public static void Initialize(int _bufferSize)
+        /// <param name="bufferSize">リングバッファのサイズ</param>
+        public static void Initialize(int bufferSize)
         {
             if (_instance != null)
             {
                 UnityEngine.Debug.LogWarning("PositionLogger is already initialized. Reinitializing...");
             }
-            _instance = new PositionLogger(_bufferSize);
+            _instance = new PositionLogger(bufferSize);
         }
 
         /// <summary>
@@ -76,10 +76,10 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// <summary>
         /// プライベートコンストラクタ
         /// </summary>
-        /// <param name="_bufferSize">リングバッファのサイズ</param>
-        private PositionLogger(int _bufferSize)
+        /// <param name="bufferSize">リングバッファのサイズ</param>
+        private PositionLogger(int bufferSize)
         {
-            buffer = new PositionEntry[_bufferSize];
+            buffer = new PositionEntry[bufferSize];
             writeIndex = 0;
             IsLoggingStarted = false;
         }
@@ -87,15 +87,15 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// <summary>
         /// 位置情報のロギングを開始します
         /// </summary>
-        /// <param name="_recordIntervalMilli">記録間隔（ミリ秒）</param>
-        public void StartLogging(int _recordIntervalMilli)
+        /// <param name="recordIntervalMilli">記録間隔（ミリ秒）</param>
+        public void StartLogging(int recordIntervalMilli)
         {
             if (IsLoggingStarted)
             {
                 return;
             }
             IsLoggingStarted = true;
-            recordIntervalMilli = _recordIntervalMilli;
+            this.recordIntervalMilli = recordIntervalMilli;
             _ = Logging();
         }
 
