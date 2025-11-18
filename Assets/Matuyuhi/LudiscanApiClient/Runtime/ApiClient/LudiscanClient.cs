@@ -42,14 +42,14 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// <summary>
         /// LudiscanClientを初期化します
         /// </summary>
-        /// <param name="_config">クライアント設定</param>
-        public static void Initialize(LudiscanClientConfig _config)
+        /// <param name="config">クライアント設定</param>
+        public static void Initialize(LudiscanClientConfig config)
         {
             if (_instance != null)
             {
                 Debug.LogWarning("LudiscanClient is already initialized. Reinitializing...");
             }
-            _instance = new ApiClient.LudiscanClient(_config);
+            _instance = new ApiClient.LudiscanClient(config);
         }
 
         /// <summary>
@@ -60,13 +60,13 @@ namespace LudiscanApiClient.Runtime.ApiClient
         private readonly AppApi defaultApi;
         private readonly GameClientAPIApi api;
 
-        private LudiscanClient(LudiscanClientConfig _clientConfig)
+        private LudiscanClient(LudiscanClientConfig clientConfig)
         {
-            this.config = _clientConfig;
+            this.config = clientConfig;
             var userAgent = $"Matuyuhi.LudiscanApi.UnityClient/1.0.0 (Unity {Application.unityVersion}; {SystemInfo.operatingSystem})";
             var configuration = new Configuration {
-                BasePath = _clientConfig.ApiBaseUrl,
-                Timeout = TimeSpan.FromSeconds(_clientConfig.TimeoutSeconds),
+                BasePath = clientConfig.ApiBaseUrl,
+                Timeout = TimeSpan.FromSeconds(clientConfig.TimeoutSeconds),
                 DefaultHeaders = new Dictionary<string, string> {
                     {
                         "Accept", "*/*"
@@ -137,22 +137,22 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// <summary>
         /// 新しいプレイセッションを作成します
         /// </summary>
-        /// <param name="_project">セッションを作成するプロジェクト</param>
-        /// <param name="_name">セッション名</param>
+        /// <param name="projectId">プロジェクトID</param>
+        /// <param name="name">セッション名</param>
         /// <returns>作成されたセッション情報</returns>
         /// <exception cref="ApiException">API呼び出しが失敗した場合</exception>
-        public async Task<PlaySessionResponseDto> CreateSession(IProject _project, string _name)
+        public async Task<PlaySessionResponseDto> CreateSession(int projectId, string name)
         {
             try
             {
-                CreatePlaySessionDto createPlaySessionDto = new CreatePlaySessionDto(_name) {
+                CreatePlaySessionDto createPlaySessionDto = new CreatePlaySessionDto(name) {
                     AppVersion = Application.version,
                     DeviceId = SystemInfo.deviceUniqueIdentifier,
                     Platform = "Unity-" + Application.platform
                 };
                 var res = await api.GameControllerCreateSessionWithHttpInfoAsync(
                     config.XapiKey,
-                    _project.Id, createPlaySessionDto
+                    projectId, createPlaySessionDto
                 );
                 return res.Data;
             } catch (ApiException e)
@@ -163,21 +163,78 @@ namespace LudiscanApiClient.Runtime.ApiClient
         }
 
         /// <summary>
+        /// 新しいプレイセッションを作成します
+        /// </summary>
+        /// <param name="project">セッションを作成するプロジェクト</param>
+        /// <param name="name">セッション名</param>
+        /// <returns>作成されたセッション情報</returns>
+        /// <exception cref="ApiException">API呼び出しが失敗した場合</exception>
+        public async Task<PlaySessionResponseDto> CreateSession(IProject project, string name)
+        {
+            return await CreateSession(project.Id, name);
+        }
+
+        /// <summary>
         /// プレイヤーの位置情報をアップロードします
         /// </summary>
-        /// <param name="_session">対象のセッション</param>
-        /// <param name="_position">アップロードする位置情報の配列</param>
+        /// <param name="projectId">プロジェクトID</param>
+        /// <param name="sessionId">セッションID</param>
+        /// <param name="position">アップロードする位置情報の配列</param>
         /// <exception cref="Exception">アップロードが失敗した場合</exception>
-        public async Task UploadPosition(Session _session, PositionEntry[] _position)
+        public async Task UploadPosition(int projectId, int sessionId, PositionEntry[] position)
         {
             try
             {
-                var stream = CreatePositionStream(_position);
+                var stream = CreatePositionStream(position);
                 var res = await api.GameControllerUploadPlayerPositionsWithHttpInfoAsync(
                     config.XapiKey,
-                    _session.ProjectId, _session.SessionId, stream
+                    projectId, sessionId, stream
                 );
                 if (!res.Data.Success) throw new Exception(res.Data.Message);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// プレイヤーの位置情報をアップロードします
+        /// </summary>
+        /// <param name="session">対象のセッション</param>
+        /// <param name="position">アップロードする位置情報の配列</param>
+        /// <exception cref="Exception">アップロードが失敗した場合</exception>
+        public async Task UploadPosition(Session session, PositionEntry[] position)
+        {
+            await UploadPosition(session.ProjectId, session.SessionId, position);
+        }
+
+        /// <summary>
+        /// フィールドオブジェクト（アイテム、敵など）のログをアップロードします
+        /// </summary>
+        /// <param name="projectId">プロジェクトID</param>
+        /// <param name="sessionId">セッションID</param>
+        /// <param name="entries">アップロードするフィールドオブジェクトログの配列</param>
+        /// <exception cref="Exception">アップロードが失敗した場合</exception>
+        public async Task UploadFieldObjectLogs(int projectId, int sessionId, FieldObjectEntity[] entries)
+        {
+            try
+            {
+                if (entries == null || entries.Length == 0)
+                {
+                    Debug.LogWarning("No field object logs to upload");
+                    return;
+                }
+
+                var stream = CreateFieldObjectStream(entries);
+                var res = await api.GameControllerUploadFieldObjectLogsWithHttpInfoAsync(
+                    config.XapiKey,
+                    projectId, sessionId, stream
+                );
+                if (!res.Data.Success) throw new Exception(res.Data.Message);
+
+                Debug.Log($"Uploaded {entries.Length} field object logs successfully");
             }
             catch (Exception e)
             {
@@ -189,27 +246,41 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// <summary>
         /// フィールドオブジェクト（アイテム、敵など）のログをアップロードします
         /// </summary>
-        /// <param name="_session">対象のセッション</param>
-        /// <param name="_entries">アップロードするフィールドオブジェクトログの配列</param>
+        /// <param name="session">対象のセッション</param>
+        /// <param name="entries">アップロードするフィールドオブジェクトログの配列</param>
         /// <exception cref="Exception">アップロードが失敗した場合</exception>
-        public async Task UploadFieldObjectLogs(Session _session, FieldObjectEntity[] _entries)
+        public async Task UploadFieldObjectLogs(Session session, FieldObjectEntity[] entries)
+        {
+            await UploadFieldObjectLogs(session.ProjectId, session.SessionId, entries);
+        }
+
+        /// <summary>
+        /// 一般イベントログをアップロードします
+        /// </summary>
+        /// <param name="projectId">プロジェクトID</param>
+        /// <param name="sessionId">セッションID</param>
+        /// <param name="entries">アップロードする一般イベントログの配列</param>
+        /// <exception cref="Exception">アップロードが失敗した場合</exception>
+        public async Task UploadGeneralEventLogs(int projectId, int sessionId, GeneralEventEntity[] entries)
         {
             try
             {
-                if (_entries == null || _entries.Length == 0)
+                if (entries == null || entries.Length == 0)
                 {
-                    Debug.LogWarning("No field object logs to upload");
+                    Debug.LogWarning("No general event logs to upload");
                     return;
                 }
 
-                var stream = CreateFieldObjectStream(_entries);
-                var res = await api.GameControllerUploadFieldObjectLogsWithHttpInfoAsync(
+                var stream = CreateGeneralEventStream(entries);
+                // Use the general log endpoint to upload batch of events
+                // Note: This uses a bulk upload approach similar to field objects
+                var res = await api.GameControllerUploadGeneralEventLogsWithHttpInfoAsync(
                     config.XapiKey,
-                    _session.ProjectId, _session.SessionId, stream
+                    projectId, sessionId, stream
                 );
                 if (!res.Data.Success) throw new Exception(res.Data.Message);
 
-                Debug.Log($"Uploaded {_entries.Length} field object logs successfully");
+                Debug.Log($"Uploaded {entries.Length} general event logs successfully");
             }
             catch (Exception e)
             {
@@ -221,29 +292,30 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// <summary>
         /// 一般イベントログをアップロードします
         /// </summary>
-        /// <param name="_session">対象のセッション</param>
-        /// <param name="_entries">アップロードする一般イベントログの配列</param>
+        /// <param name="session">対象のセッション</param>
+        /// <param name="entries">アップロードする一般イベントログの配列</param>
         /// <exception cref="Exception">アップロードが失敗した場合</exception>
-        public async Task UploadGeneralEventLogs(Session _session, GeneralEventEntity[] _entries)
+        public async Task UploadGeneralEventLogs(Session session, GeneralEventEntity[] entries)
+        {
+            await UploadGeneralEventLogs(session.ProjectId, session.SessionId, entries);
+        }
+
+        /// <summary>
+        /// セッションを終了します
+        /// </summary>
+        /// <param name="projectId">プロジェクトID</param>
+        /// <param name="sessionId">セッションID</param>
+        /// <returns>更新されたセッション情報</returns>
+        /// <exception cref="Exception">セッション終了が失敗した場合</exception>
+        public async Task<Session> FinishSession(int projectId, int sessionId)
         {
             try
             {
-                if (_entries == null || _entries.Length == 0)
-                {
-                    Debug.LogWarning("No general event logs to upload");
-                    return;
-                }
-
-                var stream = CreateGeneralEventStream(_entries);
-                // Use the general log endpoint to upload batch of events
-                // Note: This uses a bulk upload approach similar to field objects
-                var res = await api.GameControllerUploadGeneralEventLogsWithHttpInfoAsync(
+                var res = await api.GameControllerFinishSessionWithHttpInfoAsync(
                     config.XapiKey,
-                    _session.ProjectId, _session.SessionId, stream
+                    projectId, sessionId
                 );
-                if (!res.Data.Success) throw new Exception(res.Data.Message);
-
-                Debug.Log($"Uploaded {_entries.Length} general event logs successfully");
+                return Session.FromDto(res.Data);
             }
             catch (Exception e)
             {
@@ -255,16 +327,31 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// <summary>
         /// セッションを終了します
         /// </summary>
-        /// <param name="_session">終了するセッション</param>
+        /// <param name="session">終了するセッション</param>
         /// <returns>更新されたセッション情報</returns>
         /// <exception cref="Exception">セッション終了が失敗した場合</exception>
-        public async Task<Session> FinishSession(Session _session)
+        public async Task<Session> FinishSession(Session session)
+        {
+            return await FinishSession(session.ProjectId, session.SessionId);
+        }
+
+        /// <summary>
+        /// セッションのマップ名を更新します
+        /// </summary>
+        /// <param name="projectId">プロジェクトID</param>
+        /// <param name="sessionId">セッションID</param>
+        /// <param name="mapName">設定するマップ名</param>
+        /// <returns>更新されたセッション情報</returns>
+        /// <exception cref="Exception">更新が失敗した場合</exception>
+        public async Task<Session> PutMapName(int projectId, int sessionId, string mapName)
         {
             try
             {
-                var res = await api.GameControllerFinishSessionWithHttpInfoAsync(
+                var req = new UpdatePlaySessionDto();
+                req.MetaData = new { mapName = mapName };
+                var res = await api.GameControllerUpdateSessionWithHttpInfoAsync(
                     config.XapiKey,
-                    _session.ProjectId, _session.SessionId
+                    projectId, sessionId, req
                 );
                 return Session.FromDto(res.Data);
             }
@@ -278,19 +365,32 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// <summary>
         /// セッションのマップ名を更新します
         /// </summary>
-        /// <param name="_session">対象のセッション</param>
-        /// <param name="_mapName">設定するマップ名</param>
+        /// <param name="session">対象のセッション</param>
+        /// <param name="mapName">設定するマップ名</param>
         /// <returns>更新されたセッション情報</returns>
         /// <exception cref="Exception">更新が失敗した場合</exception>
-        public async Task<Session> PutMapName(Session _session, string _mapName)
+        public async Task<Session> PutMapName(Session session, string mapName)
+        {
+            return await PutMapName(session.ProjectId, session.SessionId, mapName);
+        }
+
+        /// <summary>
+        /// セッションのスコアを更新します
+        /// </summary>
+        /// <param name="projectId">プロジェクトID</param>
+        /// <param name="sessionId">セッションID</param>
+        /// <param name="score">設定するスコア</param>
+        /// <returns>更新されたセッション情報</returns>
+        /// <exception cref="Exception">更新が失敗した場合</exception>
+        public async Task<Session> PutScore(int projectId, int sessionId, int score)
         {
             try
             {
                 var req = new UpdatePlaySessionDto();
-                req.MetaData = new { mapName = _mapName };
+                req.MetaData = new { score = score };
                 var res = await api.GameControllerUpdateSessionWithHttpInfoAsync(
                     config.XapiKey,
-                    _session.ProjectId, _session.SessionId, req
+                    projectId, sessionId, req
                 );
                 return Session.FromDto(res.Data);
             }
@@ -304,27 +404,13 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// <summary>
         /// セッションのスコアを更新します
         /// </summary>
-        /// <param name="_session">対象のセッション</param>
-        /// <param name="_score">設定するスコア</param>
+        /// <param name="session">対象のセッション</param>
+        /// <param name="score">設定するスコア</param>
         /// <returns>更新されたセッション情報</returns>
         /// <exception cref="Exception">更新が失敗した場合</exception>
-        public async Task<Session> PutScore(Session _session, int _score)
+        public async Task<Session> PutScore(Session session, int score)
         {
-            try
-            {
-                var req = new UpdatePlaySessionDto();
-                req.MetaData = new { score = _score };
-                var res = await api.GameControllerUpdateSessionWithHttpInfoAsync(
-                    config.XapiKey,
-                    _session.ProjectId, _session.SessionId, req
-                );
-                return Session.FromDto(res.Data);
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-                throw;
-            }
+            return await PutScore(session.ProjectId, session.SessionId, score);
         }
 
         /// <summary>
