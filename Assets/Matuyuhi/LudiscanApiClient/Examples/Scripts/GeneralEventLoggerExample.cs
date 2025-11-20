@@ -27,6 +27,18 @@ namespace LudiscanApiClient.Examples
 
             Debug.Log("GeneralEventLogger initialized");
 
+            // EventScreenshotCaptureの初期化（death/successイベント用）
+            // 0.5秒間隔でスクリーンショットを撮影し、最新5枚を保持
+            EventScreenshotCapture.Initialize(autoStartCapture: true);
+            EventScreenshotCapture.Instance.ConfigureCapture(
+                interval: 0.5f,      // 0.5秒間隔
+                bufferSize: 5,       // 5枚保持（約2.5秒分）
+                scale: 0.5f,         // 解像度を半分に縮小
+                quality: 75          // JPEG品質75%
+            );
+
+            Debug.Log("EventScreenshotCapture initialized and started");
+
             // セッション作成（簡略化のため、既にセッションが作成されていると仮定）
             isSessionActive = true;
         }
@@ -380,6 +392,81 @@ namespace LudiscanApiClient.Examples
         {
             OnScoreMilestone(defaultPlayerId, transform.position, 1000, 1000);
         }
+
+        #endregion
+
+        #region スクリーンショット機能の使用例
+
+        /// <summary>
+        /// スクリーンショット機能の有効/無効を切り替え
+        /// </summary>
+        [ContextMenu("Toggle Screenshot Capture")]
+        private void ToggleScreenshotCapture()
+        {
+            if (GeneralEventLogger.IsInitialized)
+            {
+                GeneralEventLogger.Instance.EnableScreenshots = !GeneralEventLogger.Instance.EnableScreenshots;
+                Debug.Log($"Screenshot capture is now {(GeneralEventLogger.Instance.EnableScreenshots ? "ENABLED" : "DISABLED")}");
+            }
+        }
+
+        /// <summary>
+        /// カスタムイベントタイプでスクリーンショットを有効化する例
+        /// </summary>
+        private void EnableScreenshotsForCustomEvent()
+        {
+            if (GeneralEventLogger.IsInitialized)
+            {
+                // "boss_defeated" イベントでもスクリーンショットを撮影するように設定
+                GeneralEventLogger.Instance.ScreenshotEventTypes.Add("boss_defeated");
+                Debug.Log("Screenshots enabled for 'boss_defeated' event");
+            }
+        }
+
+        /// <summary>
+        /// スクリーンショット設定のカスタマイズ例
+        /// </summary>
+        private void CustomizeScreenshotSettings()
+        {
+            if (EventScreenshotCapture.IsInitialized)
+            {
+                // より高頻度、高解像度のスクリーンショット設定
+                EventScreenshotCapture.Instance.ConfigureCapture(
+                    interval: 0.25f,     // 0.25秒間隔（より細かく）
+                    bufferSize: 8,       // 8枚保持（約2秒分）
+                    scale: 1.0f,         // フル解像度
+                    quality: 90          // 高品質JPEG
+                );
+                Debug.Log("Screenshot settings customized for high quality");
+            }
+        }
+
+        /// <summary>
+        /// スクリーンショット情報の表示例
+        /// </summary>
+        [ContextMenu("Show Screenshot Info")]
+        private void ShowScreenshotInfo()
+        {
+            if (EventScreenshotCapture.IsInitialized)
+            {
+                int bufferedCount = EventScreenshotCapture.Instance.BufferedCount;
+                Debug.Log($"Screenshots buffered: {bufferedCount}");
+
+                if (bufferedCount > 0)
+                {
+                    byte[][] screenshots = EventScreenshotCapture.Instance.GetRecentScreenshots(4);
+                    Debug.Log($"Retrieved {screenshots.Length} recent screenshots");
+
+                    for (int i = 0; i < screenshots.Length; i++)
+                    {
+                        float sizeKB = screenshots[i].Length / 1024f;
+                        Debug.Log($"  Screenshot {i + 1}: {sizeKB:F2} KB");
+                    }
+                }
+            }
+        }
+
+        #endregion
 
         private void OnDestroy()
         {

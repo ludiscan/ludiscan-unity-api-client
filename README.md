@@ -11,6 +11,7 @@ This package provides high-level APIs for:
 - **Session Management** - Create and manage game sessions
 - **Position Logging** - Track player positions in real-time with automatic buffering
 - **Event Logging** - Log custom game events
+- **Event Screenshots** - Automatically capture screenshots for critical events (death, success)
 - **Field Object Tracking** - Track items, enemies, and other game objects
 
 ## Installation
@@ -106,6 +107,23 @@ GeneralEventLogger.Instance.AddLog(
     position: transform.position,
     playerId: 0
 );
+```
+
+### Event Screenshots (NEW in v1.3.0)
+Automatically capture screenshots for critical game events (death, success):
+```csharp
+// Initialize screenshot capture (typically in Start())
+EventScreenshotCapture.Initialize(autoStartCapture: true);
+EventScreenshotCapture.Instance.ConfigureCapture(
+    interval: 0.5f,    // Capture every 0.5 seconds
+    bufferSize: 5,     // Keep latest 5 screenshots (~2.5 seconds)
+    scale: 0.5f,       // Half resolution for smaller file size
+    quality: 75        // JPEG quality (0-100, or 0 for PNG)
+);
+
+// Screenshots are automatically attached to "death" and "success" events
+// Customize which events trigger screenshot capture:
+GeneralEventLogger.Instance.ScreenshotEventTypes.Add("boss_defeated");
 ```
 
 ### Field Object Tracking
