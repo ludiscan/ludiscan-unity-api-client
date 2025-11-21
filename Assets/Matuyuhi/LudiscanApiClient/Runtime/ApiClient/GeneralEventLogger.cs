@@ -140,10 +140,11 @@ namespace LudiscanApiClient.Runtime.ApiClient
             {
                 try
                 {
-                    screenshots = EventScreenshotCapture.Instance.GetRecentScreenshots(ScreenshotCount);
+                    // プレイヤーIDを渡して、そのプレイヤーのカメラからスクリーンショットを取得
+                    screenshots = EventScreenshotCapture.Instance.GetRecentScreenshots(player, ScreenshotCount);
                     if (screenshots != null && screenshots.Length > 0)
                     {
-                        Debug.Log($"GeneralEventLogger: Captured {screenshots.Length} screenshots for event '{eventType}'");
+                        Debug.Log($"GeneralEventLogger: Captured {screenshots.Length} screenshots for event '{eventType}' (player {player})");
                     }
                 }
                 catch (Exception ex)

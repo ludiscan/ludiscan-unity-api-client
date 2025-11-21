@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -8,16 +9,12 @@ namespace LudiscanApiClient.Runtime.ApiClient
 {
     /// <summary>
     /// イベント発火時のスクリーンショットキャプチャを管理するクラス
-    /// AsyncGPUReadbackを使用してメインスレッドをブロックせずにキャプチャします
-    /// death/successなどの重要イベント発火時に、直前の数秒間のスクリーンショットを提供します
+    /// 複数プレイヤー/カメラに対応し、AsyncGPUReadbackで非同期キャプチャを行います
     /// </summary>
     public class EventScreenshotCapture : MonoBehaviour
     {
         private static EventScreenshotCapture _instance;
 
-        /// <summary>
-        /// EventScreenshotCaptureのシングルトンインスタンスを取得します
-        /// </summary>
         public static EventScreenshotCapture Instance
         {
             get
@@ -30,62 +27,51 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
-        /// <summary>
-        /// EventScreenshotCaptureが初期化済みかどうかを確認します
-        /// </summary>
         public static bool IsInitialized => _instance != null;
 
         [Header("Capture Settings")]
-        [Tooltip("スクリーンショット撮影間隔（秒）")]
-        [SerializeField]
-        private float captureInterval = 0.5f;
-
-        [Tooltip("保持するスクリーンショットの最大枚数")]
-        [SerializeField]
-        private int bufferSize = 4;
-
-        [Tooltip("スクリーンショットの縮小スケール（1.0 = フル解像度、0.25 = 1/4解像度）")]
-        [SerializeField]
-        [Range(0.1f, 1.0f)]
-        private float screenshotScale = 0.25f;
-
-        [Tooltip("JPEG品質（1-100、低いほどファイルサイズが小さい）")]
-        [SerializeField]
-        [Range(1, 100)]
-        private int jpegQuality = 50;
+        [SerializeField] private float captureInterval = 0.5f;
+        [SerializeField] private int bufferSize = 4;
+        [SerializeField] [Range(0.1f, 1.0f)] private float screenshotScale = 0.25f;
+        [SerializeField] [Range(1, 100)] private int jpegQuality = 50;
 
         [Header("Runtime Status")]
-        [SerializeField]
-        private bool isCapturing = false;
+        [SerializeField] private bool isCapturing = false;
 
-        // リングバッファ（軽量なbyte[]で保持、イベント時のみJPEGエンコード不要に）
-        private FrameData[] frameBuffer;
-        private int writeIndex = 0;
-        private int frameCount = 0;
-        private readonly object bufferLock = new object();
+        // プレイヤー別のキャプチャデータ
+        private Dictionary<int, PlayerCaptureData> playerCaptures = new Dictionary<int, PlayerCaptureData>();
+        private readonly object captureLock = new object();
 
-        // キャプチャ用リソース
-        private RenderTexture captureRT;
+        // デフォルトキャプチャ（カメラ未登録時のScreenCapture用）
+        private PlayerCaptureData defaultCapture;
+
+        private float lastCaptureTime;
         private int captureWidth;
         private int captureHeight;
-        private float lastCaptureTime;
-        private bool pendingCapture = false;
-
-        // 登録されたカメラ（nullの場合はScreenCapture使用）
-        private Camera registeredCamera;
-
-        private struct FrameData
-        {
-            public byte[] RawPixels;  // RGB24 raw pixels
-            public float Timestamp;
-            public int Width;
-            public int Height;
-            public bool IsValid;
-        }
 
         /// <summary>
-        /// EventScreenshotCaptureを初期化します
+        /// プレイヤー別のキャプチャデータ
         /// </summary>
+        private class PlayerCaptureData
+        {
+            public int PlayerId;
+            public Camera Camera;
+            public RenderTexture CaptureRT;
+            public FrameData[] FrameBuffer;
+            public int WriteIndex;
+            public int FrameCount;
+            public bool PendingCapture;
+
+            public struct FrameData
+            {
+                public byte[] RawPixels;
+                public float Timestamp;
+                public int Width;
+                public int Height;
+                public bool IsValid;
+            }
+        }
+
         public static EventScreenshotCapture Initialize(bool autoStartCapture = true)
         {
             if (_instance != null)
@@ -123,29 +109,63 @@ namespace LudiscanApiClient.Runtime.ApiClient
             if (_instance == this)
             {
                 StopCapture();
-                ReleaseResources();
+                ReleaseAllResources();
                 _instance = null;
             }
         }
 
         /// <summary>
-        /// キャプチャ対象のカメラを登録します
-        /// 登録しない場合はScreenCaptureを使用します（やや重い）
+        /// プレイヤーのカメラを登録します
         /// </summary>
+        /// <param name="playerId">プレイヤーID</param>
         /// <param name="camera">キャプチャ対象のカメラ</param>
-        public void RegisterCamera(Camera camera)
+        public void RegisterCamera(int playerId, Camera camera)
         {
-            registeredCamera = camera;
-            Debug.Log($"EventScreenshotCapture: Registered camera '{camera.name}'");
+            lock (captureLock)
+            {
+                if (playerCaptures.ContainsKey(playerId))
+                {
+                    Debug.LogWarning($"EventScreenshotCapture: Player {playerId} already registered. Updating camera.");
+                    ReleasePlayerResources(playerCaptures[playerId]);
+                }
+
+                var captureData = CreatePlayerCaptureData(playerId, camera);
+                playerCaptures[playerId] = captureData;
+                Debug.Log($"EventScreenshotCapture: Registered camera for player {playerId} ('{camera.name}')");
+            }
         }
 
         /// <summary>
-        /// カメラの登録を解除します
+        /// プレイヤーのカメラ登録を解除します
         /// </summary>
-        public void UnregisterCamera()
+        /// <param name="playerId">プレイヤーID</param>
+        public void UnregisterCamera(int playerId)
         {
-            registeredCamera = null;
-            Debug.Log("EventScreenshotCapture: Unregistered camera");
+            lock (captureLock)
+            {
+                if (playerCaptures.TryGetValue(playerId, out var captureData))
+                {
+                    ReleasePlayerResources(captureData);
+                    playerCaptures.Remove(playerId);
+                    Debug.Log($"EventScreenshotCapture: Unregistered camera for player {playerId}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 全カメラの登録を解除します
+        /// </summary>
+        public void UnregisterAllCameras()
+        {
+            lock (captureLock)
+            {
+                foreach (var kvp in playerCaptures)
+                {
+                    ReleasePlayerResources(kvp.Value);
+                }
+                playerCaptures.Clear();
+                Debug.Log("EventScreenshotCapture: Unregistered all cameras");
+            }
         }
 
         /// <summary>
@@ -164,7 +184,12 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 captureInterval = interval;
             }
 
-            InitializeResources();
+            captureWidth = Mathf.RoundToInt(Screen.width * screenshotScale);
+            captureHeight = Mathf.RoundToInt(Screen.height * screenshotScale);
+
+            // デフォルトキャプチャを初期化（カメラ未登録時用）
+            defaultCapture = CreatePlayerCaptureData(-1, null);
+
             isCapturing = true;
             lastCaptureTime = Time.time;
             Debug.Log($"EventScreenshotCapture: Started (interval={captureInterval}s, scale={screenshotScale}, buffer={bufferSize})");
@@ -182,50 +207,45 @@ namespace LudiscanApiClient.Runtime.ApiClient
         }
 
         /// <summary>
-        /// バッファをクリアします
+        /// 指定プレイヤーの最新スクリーンショットを取得します
         /// </summary>
-        public void ClearBuffer()
+        /// <param name="playerId">プレイヤーID</param>
+        /// <param name="count">取得枚数</param>
+        /// <returns>JPEGバイト配列の配列</returns>
+        public byte[][] GetRecentScreenshots(int playerId, int count = 4)
         {
-            lock (bufferLock)
+            lock (captureLock)
             {
-                writeIndex = 0;
-                frameCount = 0;
-                if (frameBuffer != null)
-                {
-                    for (int i = 0; i < frameBuffer.Length; i++)
-                    {
-                        frameBuffer[i].IsValid = false;
-                    }
-                }
-            }
-        }
+                PlayerCaptureData captureData;
 
-        /// <summary>
-        /// 最新のスクリーンショットをN枚取得します（イベント発火時に呼び出し）
-        /// この時点でJPEGエンコードを実行します
-        /// </summary>
-        public byte[][] GetRecentScreenshots(int count = 4)
-        {
-            lock (bufferLock)
-            {
-                int availableCount = Mathf.Min(count, frameCount);
+                // プレイヤーIDに対応するカメラがあればそれを使用、なければデフォルト
+                if (!playerCaptures.TryGetValue(playerId, out captureData))
+                {
+                    captureData = defaultCapture;
+                }
+
+                if (captureData == null || captureData.FrameBuffer == null)
+                {
+                    Debug.LogWarning($"EventScreenshotCapture: No capture data for player {playerId}");
+                    return new byte[0][];
+                }
+
+                int availableCount = Mathf.Min(count, captureData.FrameCount);
                 if (availableCount == 0)
                 {
-                    Debug.LogWarning("EventScreenshotCapture: No frames in buffer.");
+                    Debug.LogWarning($"EventScreenshotCapture: No frames in buffer for player {playerId}");
                     return new byte[0][];
                 }
 
                 byte[][] result = new byte[availableCount][];
-
-                // 古い順に取得
-                int startIndex = (writeIndex - availableCount + bufferSize) % bufferSize;
+                int startIndex = (captureData.WriteIndex - availableCount + bufferSize) % bufferSize;
 
                 for (int i = 0; i < availableCount; i++)
                 {
                     int idx = (startIndex + i) % bufferSize;
-                    if (frameBuffer[idx].IsValid)
+                    if (captureData.FrameBuffer[idx].IsValid)
                     {
-                        result[i] = EncodeToJpeg(frameBuffer[idx]);
+                        result[i] = EncodeToJpeg(captureData.FrameBuffer[idx]);
                     }
                     else
                     {
@@ -238,18 +258,29 @@ namespace LudiscanApiClient.Runtime.ApiClient
         }
 
         /// <summary>
-        /// 現在のバッファに保持されているフレーム数を取得します
+        /// 後方互換性のため、playerId省略時はデフォルトキャプチャを返す
         /// </summary>
-        public int BufferedCount
+        public byte[][] GetRecentScreenshots(int count = 4)
         {
-            get
+            return GetRecentScreenshots(-1, count);
+        }
+
+        /// <summary>
+        /// 指定プレイヤーのバッファ数を取得
+        /// </summary>
+        public int GetBufferedCount(int playerId)
+        {
+            lock (captureLock)
             {
-                lock (bufferLock)
+                if (playerCaptures.TryGetValue(playerId, out var captureData))
                 {
-                    return frameCount;
+                    return captureData.FrameCount;
                 }
+                return defaultCapture?.FrameCount ?? 0;
             }
         }
+
+        public int BufferedCount => GetBufferedCount(-1);
 
         /// <summary>
         /// キャプチャ設定を変更します
@@ -264,136 +295,208 @@ namespace LudiscanApiClient.Runtime.ApiClient
             if (scale > 0) screenshotScale = Mathf.Clamp(scale, 0.1f, 1.0f);
             if (quality > 0) jpegQuality = Mathf.Clamp(quality, 1, 100);
 
-            ReleaseResources();
+            ReleaseAllResources();
 
             if (wasCapturing) StartCapture();
         }
 
-        private void InitializeResources()
+        public void ClearBuffer()
         {
-            captureWidth = Mathf.RoundToInt(Screen.width * screenshotScale);
-            captureHeight = Mathf.RoundToInt(Screen.height * screenshotScale);
+            lock (captureLock)
+            {
+                foreach (var kvp in playerCaptures)
+                {
+                    ClearPlayerBuffer(kvp.Value);
+                }
+                if (defaultCapture != null)
+                {
+                    ClearPlayerBuffer(defaultCapture);
+                }
+            }
+        }
 
-            // RenderTexture作成
-            captureRT = new RenderTexture(captureWidth, captureHeight, 0, RenderTextureFormat.ARGB32);
-            captureRT.Create();
+        private void ClearPlayerBuffer(PlayerCaptureData data)
+        {
+            data.WriteIndex = 0;
+            data.FrameCount = 0;
+            if (data.FrameBuffer != null)
+            {
+                for (int i = 0; i < data.FrameBuffer.Length; i++)
+                {
+                    data.FrameBuffer[i].IsValid = false;
+                }
+            }
+        }
 
-            // フレームバッファ初期化
-            frameBuffer = new FrameData[bufferSize];
+        private PlayerCaptureData CreatePlayerCaptureData(int playerId, Camera camera)
+        {
+            var data = new PlayerCaptureData
+            {
+                PlayerId = playerId,
+                Camera = camera,
+                CaptureRT = new RenderTexture(captureWidth, captureHeight, 0, RenderTextureFormat.ARGB32),
+                FrameBuffer = new PlayerCaptureData.FrameData[bufferSize],
+                WriteIndex = 0,
+                FrameCount = 0,
+                PendingCapture = false
+            };
+
+            data.CaptureRT.Create();
+
             for (int i = 0; i < bufferSize; i++)
             {
-                frameBuffer[i] = new FrameData
+                data.FrameBuffer[i] = new PlayerCaptureData.FrameData
                 {
-                    RawPixels = new byte[captureWidth * captureHeight * 3], // RGB24
+                    RawPixels = new byte[captureWidth * captureHeight * 3],
                     Width = captureWidth,
                     Height = captureHeight,
                     IsValid = false
                 };
             }
 
-            writeIndex = 0;
-            frameCount = 0;
-
-            Debug.Log($"EventScreenshotCapture: Initialized {bufferSize} frame buffers at {captureWidth}x{captureHeight}");
+            return data;
         }
 
-        private void ReleaseResources()
+        private void ReleasePlayerResources(PlayerCaptureData data)
         {
-            if (captureRT != null)
+            if (data?.CaptureRT != null)
             {
-                captureRT.Release();
-                Destroy(captureRT);
-                captureRT = null;
+                data.CaptureRT.Release();
+                Destroy(data.CaptureRT);
+                data.CaptureRT = null;
             }
-            frameBuffer = null;
+            data.FrameBuffer = null;
+        }
+
+        private void ReleaseAllResources()
+        {
+            lock (captureLock)
+            {
+                foreach (var kvp in playerCaptures)
+                {
+                    ReleasePlayerResources(kvp.Value);
+                }
+                playerCaptures.Clear();
+
+                if (defaultCapture != null)
+                {
+                    ReleasePlayerResources(defaultCapture);
+                    defaultCapture = null;
+                }
+            }
         }
 
         private void LateUpdate()
         {
-            if (!isCapturing || pendingCapture) return;
-
-            // インターバルチェック
+            if (!isCapturing) return;
             if (Time.time - lastCaptureTime < captureInterval) return;
 
             lastCaptureTime = Time.time;
-            StartCoroutine(CaptureFrameAsync());
+            StartCoroutine(CaptureAllPlayersAsync());
         }
 
-        private IEnumerator CaptureFrameAsync()
+        private IEnumerator CaptureAllPlayersAsync()
         {
-            pendingCapture = true;
-
-            // フレーム終了を待つ
             yield return new WaitForEndOfFrame();
 
-            if (!isCapturing || captureRT == null)
-            {
-                pendingCapture = false;
-                yield break;
-            }
+            if (!isCapturing) yield break;
 
+            lock (captureLock)
+            {
+                // 登録済みカメラをキャプチャ
+                foreach (var kvp in playerCaptures)
+                {
+                    var data = kvp.Value;
+                    if (!data.PendingCapture && data.Camera != null && data.CaptureRT != null)
+                    {
+                        CapturePlayerCamera(data);
+                    }
+                }
+
+                // デフォルトキャプチャ（ScreenCapture）
+                if (defaultCapture != null && !defaultCapture.PendingCapture && defaultCapture.CaptureRT != null)
+                {
+                    CaptureScreenDefault(defaultCapture);
+                }
+            }
+        }
+
+        private void CapturePlayerCamera(PlayerCaptureData data)
+        {
             try
             {
-                // カメラが登録されている場合はカメラからレンダリング
-                if (registeredCamera != null)
-                {
-                    var prevRT = registeredCamera.targetTexture;
-                    registeredCamera.targetTexture = captureRT;
-                    registeredCamera.Render();
-                    registeredCamera.targetTexture = prevRT;
-                }
-                else
-                {
-                    // ScreenCapture経由（やや重いが汎用的）
-                    ScreenCapture.CaptureScreenshotIntoRenderTexture(captureRT);
-                }
+                data.PendingCapture = true;
 
-                // AsyncGPUReadbackでGPU→CPU転送（非同期、メインスレッドブロックなし）
-                AsyncGPUReadback.Request(captureRT, 0, TextureFormat.RGB24, OnGPUReadbackComplete);
+                var prevRT = data.Camera.targetTexture;
+                data.Camera.targetTexture = data.CaptureRT;
+                data.Camera.Render();
+                data.Camera.targetTexture = prevRT;
+
+                AsyncGPUReadback.Request(data.CaptureRT, 0, TextureFormat.RGB24, (request) =>
+                {
+                    OnGPUReadbackComplete(request, data);
+                });
             }
             catch (Exception ex)
             {
-                Debug.LogError($"EventScreenshotCapture: Capture failed: {ex.Message}");
-                pendingCapture = false;
+                Debug.LogError($"EventScreenshotCapture: Capture failed for player {data.PlayerId}: {ex.Message}");
+                data.PendingCapture = false;
             }
         }
 
-        private void OnGPUReadbackComplete(AsyncGPUReadbackRequest request)
+        private void CaptureScreenDefault(PlayerCaptureData data)
         {
-            pendingCapture = false;
+            try
+            {
+                data.PendingCapture = true;
+
+                ScreenCapture.CaptureScreenshotIntoRenderTexture(data.CaptureRT);
+
+                AsyncGPUReadback.Request(data.CaptureRT, 0, TextureFormat.RGB24, (request) =>
+                {
+                    OnGPUReadbackComplete(request, data);
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"EventScreenshotCapture: Default capture failed: {ex.Message}");
+                data.PendingCapture = false;
+            }
+        }
+
+        private void OnGPUReadbackComplete(AsyncGPUReadbackRequest request, PlayerCaptureData data)
+        {
+            data.PendingCapture = false;
 
             if (request.hasError)
             {
-                Debug.LogWarning("EventScreenshotCapture: GPU readback error");
+                Debug.LogWarning($"EventScreenshotCapture: GPU readback error for player {data.PlayerId}");
                 return;
             }
 
-            if (!isCapturing || frameBuffer == null)
-            {
-                return;
-            }
+            if (!isCapturing || data.FrameBuffer == null) return;
 
             try
             {
-                // NativeArrayからbyte[]にコピー
-                var data = request.GetData<byte>();
+                var rawData = request.GetData<byte>();
 
-                lock (bufferLock)
+                lock (captureLock)
                 {
-                    if (frameBuffer[writeIndex].RawPixels == null ||
-                        frameBuffer[writeIndex].RawPixels.Length != data.Length)
+                    var frame = data.FrameBuffer[data.WriteIndex];
+                    if (frame.RawPixels == null || frame.RawPixels.Length != rawData.Length)
                     {
-                        frameBuffer[writeIndex].RawPixels = new byte[data.Length];
+                        frame.RawPixels = new byte[rawData.Length];
                     }
 
-                    NativeArray<byte>.Copy(data, frameBuffer[writeIndex].RawPixels, data.Length);
-                    frameBuffer[writeIndex].Width = captureWidth;
-                    frameBuffer[writeIndex].Height = captureHeight;
-                    frameBuffer[writeIndex].Timestamp = Time.time;
-                    frameBuffer[writeIndex].IsValid = true;
+                    NativeArray<byte>.Copy(rawData, frame.RawPixels, rawData.Length);
+                    frame.Width = captureWidth;
+                    frame.Height = captureHeight;
+                    frame.Timestamp = Time.time;
+                    frame.IsValid = true;
 
-                    writeIndex = (writeIndex + 1) % bufferSize;
-                    frameCount = Mathf.Min(frameCount + 1, bufferSize);
+                    data.FrameBuffer[data.WriteIndex] = frame;
+                    data.WriteIndex = (data.WriteIndex + 1) % bufferSize;
+                    data.FrameCount = Mathf.Min(data.FrameCount + 1, bufferSize);
                 }
             }
             catch (Exception ex)
@@ -402,24 +505,16 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
-        /// <summary>
-        /// RawピクセルデータをJPEGにエンコード（イベント時のみ実行）
-        /// </summary>
-        private byte[] EncodeToJpeg(FrameData frame)
+        private byte[] EncodeToJpeg(PlayerCaptureData.FrameData frame)
         {
-            if (!frame.IsValid || frame.RawPixels == null)
-            {
-                return new byte[0];
-            }
+            if (!frame.IsValid || frame.RawPixels == null) return new byte[0];
 
             try
             {
-                // Texture2D作成してエンコード
                 var tex = new Texture2D(frame.Width, frame.Height, TextureFormat.RGB24, false);
                 tex.LoadRawTextureData(frame.RawPixels);
                 tex.Apply();
 
-                // 上下反転（GPUから読み取ったデータは上下逆）
                 FlipTextureVertically(tex);
 
                 byte[] jpeg = tex.EncodeToJPG(jpegQuality);
@@ -434,9 +529,6 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
-        /// <summary>
-        /// テクスチャを上下反転します
-        /// </summary>
         private void FlipTextureVertically(Texture2D tex)
         {
             var pixels = tex.GetPixels();
