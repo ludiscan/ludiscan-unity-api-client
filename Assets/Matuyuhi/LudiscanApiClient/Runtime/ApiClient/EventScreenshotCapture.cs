@@ -42,17 +42,17 @@ namespace LudiscanApiClient.Runtime.ApiClient
 
         [Tooltip("保持するスクリーンショットの最大枚数")]
         [SerializeField]
-        private int bufferSize = 5;
+        private int bufferSize = 4;
 
-        [Tooltip("スクリーンショットの縮小スケール（1.0 = フル解像度、0.5 = 半分の解像度）")]
+        [Tooltip("スクリーンショットの縮小スケール（1.0 = フル解像度、0.25 = 1/4解像度）")]
         [SerializeField]
         [Range(0.1f, 1.0f)]
-        private float screenshotScale = 0.5f;
+        private float screenshotScale = 0.25f;
 
         [Tooltip("JPEG品質（1-100、低いほどファイルサイズが小さい）。0の場合はPNG形式を使用")]
         [SerializeField]
         [Range(0, 100)]
-        private int jpegQuality = 75;
+        private int jpegQuality = 50;
 
         [Header("Runtime Status")]
         [Tooltip("現在キャプチャ中かどうか")]

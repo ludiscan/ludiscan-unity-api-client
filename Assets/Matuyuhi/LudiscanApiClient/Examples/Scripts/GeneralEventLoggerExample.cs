@@ -28,14 +28,15 @@ namespace LudiscanApiClient.Examples
             Debug.Log("GeneralEventLogger initialized");
 
             // EventScreenshotCaptureの初期化（death/successイベント用）
-            // 0.5秒間隔でスクリーンショットを撮影し、最新5枚を保持
+            // デフォルト: 0.5秒間隔、4枚保持、1/4解像度、JPEG品質50%（最小設定）
             EventScreenshotCapture.Initialize(autoStartCapture: true);
-            EventScreenshotCapture.Instance.ConfigureCapture(
-                interval: 0.5f,      // 0.5秒間隔
-                bufferSize: 5,       // 5枚保持（約2.5秒分）
-                scale: 0.5f,         // 解像度を半分に縮小
-                quality: 75          // JPEG品質75%
-            );
+            // 必要に応じて設定をカスタマイズ（デフォルトは最小設定で約10-30KB/枚）
+            // EventScreenshotCapture.Instance.ConfigureCapture(
+            //     interval: 0.5f,      // 0.5秒間隔
+            //     bufferSize: 4,       // 4枚保持（約2秒分）
+            //     scale: 0.25f,        // 解像度を1/4に縮小
+            //     quality: 50          // JPEG品質50%
+            // );
 
             Debug.Log("EventScreenshotCapture initialized and started");
 
