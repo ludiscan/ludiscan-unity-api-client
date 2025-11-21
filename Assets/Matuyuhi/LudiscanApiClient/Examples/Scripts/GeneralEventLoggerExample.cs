@@ -394,8 +394,6 @@ namespace LudiscanApiClient.Examples
             OnScoreMilestone(defaultPlayerId, transform.position, 1000, 1000);
         }
 
-        #endregion
-
         #region スクリーンショット機能の使用例
 
         /// <summary>
