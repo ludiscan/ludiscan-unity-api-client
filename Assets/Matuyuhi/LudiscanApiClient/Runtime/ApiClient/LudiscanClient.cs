@@ -414,6 +414,28 @@ namespace LudiscanApiClient.Runtime.ApiClient
         }
 
         /// <summary>
+        /// 指定したプロジェクトIDとセッションIDに対応するヒートマップページのURLを取得します。
+        /// </summary>
+        /// <param name="projectId">プロジェクトの一意の識別子</param>
+        /// <param name="sessionId">セッションの一意の識別子</param>
+        /// <returns>ヒートマップページの埋め込み用URL</returns>
+        public async Task<string> GetHeatmapPageUrl(int projectId, int sessionId)
+        {
+            try
+            {
+                var res = await api.GameControllerGetHeatmapEmbedUrlWithHttpInfoAsync(
+                    config.XapiKey,
+                    projectId, sessionId);
+                return res.Data.Url;
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                throw;
+            }
+        }
+
+        /// <summary>
         /// 一般イベントのログタイプ
         /// PascalCase形式で定義されており、内部的にsnake_caseに変換されます
         /// </summary>
