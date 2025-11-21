@@ -19,6 +19,22 @@ namespace LudiscanApiClient.Runtime.ApiClient
         private readonly object lockObject = new object();
 
         /// <summary>
+        /// スクリーンショット機能を有効にするかどうか
+        /// </summary>
+        public bool EnableScreenshots { get; set; } = true;
+
+        /// <summary>
+        /// スクリーンショットをキャプチャする対象のイベントタイプ
+        /// デフォルトは "death" と "success"
+        /// </summary>
+        public HashSet<string> ScreenshotEventTypes { get; set; } = new HashSet<string> { "death", "success" };
+
+        /// <summary>
+        /// イベント発火時にキャプチャするスクリーンショットの枚数
+        /// </summary>
+        public int ScreenshotCount { get; set; } = 4;
+
+        /// <summary>
         /// GeneralEventLoggerのシングルトンインスタンスを取得します
         /// Initialize()で初期化されていない場合は例外をスローします
         /// </summary>
@@ -88,12 +104,14 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// <param name="offsetTimestamp">ゲーム開始からのオフセット時間（ミリ秒）</param>
         /// <param name="position">イベントの位置情報（Vector3またはオブジェクト）</param>
         /// <param name="player">プレイヤーID</param>
+        /// <param name="captureScreenshot">スクリーンショットを強制的にキャプチャする（null=自動判定）</param>
         public void AddLog(
             string eventType,
             object metadata,
             ulong offsetTimestamp,
             Vector3 position,
-            int player = 0
+            int player = 0,
+            bool? captureScreenshot = null
         )
         {
             if (string.IsNullOrEmpty(eventType))
@@ -113,13 +131,36 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 { "z", position.y * 100 }
             };
 
+            // スクリーンショットキャプチャの判定
+            byte[][] screenshots = null;
+            bool shouldCaptureScreenshot = captureScreenshot ??
+                (EnableScreenshots && ScreenshotEventTypes.Contains(eventType));
+
+            if (shouldCaptureScreenshot && EventScreenshotCapture.IsInitialized)
+            {
+                try
+                {
+                    // プレイヤーIDを渡して、そのプレイヤーのカメラからスクリーンショットを取得
+                    screenshots = EventScreenshotCapture.Instance.GetRecentScreenshots(player, ScreenshotCount);
+                    if (screenshots != null && screenshots.Length > 0)
+                    {
+                        Debug.Log($"GeneralEventLogger: Captured {screenshots.Length} screenshots for event '{eventType}' (player {player})");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"GeneralEventLogger: Failed to capture screenshots for event '{eventType}': {ex.Message}");
+                }
+            }
+
             var entry = new GeneralEventEntity
             {
                 EventType = eventType,
                 Metadata = metadata,
                 OffsetTimeStamp = offsetTimestamp,
                 Player = player,
-                Position = transformedPosition
+                Position = transformedPosition,
+                Screenshots = screenshots
             };
 
             lock (lockObject)

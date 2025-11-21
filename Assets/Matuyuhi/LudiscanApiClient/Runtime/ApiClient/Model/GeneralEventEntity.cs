@@ -40,5 +40,13 @@ namespace LudiscanApiClient.Runtime.ApiClient.Model
         /// </summary>
         [JsonProperty("position")]
         public object Position;
+
+        /// <summary>
+        /// イベント発火時のスクリーンショット（PNG/JPEGバイト配列の配列）
+        /// death, successなどの重要イベント時に、直前1-2秒間のスクリーンショット（通常4枚程度）を保持
+        /// オプショナルフィールドで、nullの場合はスクリーンショットなし
+        /// </summary>
+        [JsonProperty("screenshots", NullValueHandling = NullValueHandling.Ignore)]
+        public byte[][] Screenshots;
     }
 }
