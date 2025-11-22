@@ -86,16 +86,6 @@ jobs:
           echo "DLL copied to Unity project:"
           ls -lh Assets/Matuyuhi/LudiscanApiClient/Runtime/Plugins/Matuyuhi.LudiscanApi.Client.dll
 
-      - name: Update package version
-        run: |
-          VERSION="${{ steps.payload.outputs.version }}"
-
-          # Update package.json version
-          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" Assets/Matuyuhi/LudiscanApiClient/package.json
-
-          echo "Updated package.json:"
-          grep "version" Assets/Matuyuhi/LudiscanApiClient/package.json
-
       - name: Check for changes
         id: changes
         run: |
@@ -124,7 +114,6 @@ jobs:
             -m "" \
             -m "Auto-generated from Swagger spec update." \
             -m "- Regenerated C# client DLL" \
-            -m "- Updated package version to $VERSION" \
             -m "" \
             -m "Triggered by: swagger_updated event" \
             -m "Swagger URL: $SWAGGER_URL"
@@ -150,7 +139,6 @@ jobs:
 
           ### Changes
           - 🔄 Regenerated C# client DLL from latest Swagger specification
-          - 📦 Updated package version to **${VERSION}**
 
           ### Details
           - **Triggered by**: swagger_updated event from API repository
@@ -159,7 +147,6 @@ jobs:
 
           ### Test Plan
           - [ ] Verify the DLL is properly generated and placed in Runtime/Plugins/
-          - [ ] Check that package.json version is updated correctly
           - [ ] Test integration with Unity project
           - [ ] Verify API compatibility
 
