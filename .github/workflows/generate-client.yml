@@ -1,0 +1,199 @@
+name: Generate Unity C# Client from Swagger
+
+on:
+  repository_dispatch:
+    types: [swagger_updated]
+
+jobs:
+  generate-client:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x'
+
+      - name: Setup Java (required for openapi-generator)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install OpenAPI Generator CLI
+        run: |
+          npm install -g @openapitools/openapi-generator-cli
+          openapi-generator-cli version-manager set 7.12.0
+
+      - name: Extract event payload
+        id: payload
+        run: |
+          VERSION="${{ github.event.client_payload.version }}"
+          SWAGGER_URL="${{ github.event.client_payload.swagger_url }}"
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "swagger_url=$SWAGGER_URL" >> $GITHUB_OUTPUT
+          echo "Received version: $VERSION"
+          echo "Swagger URL: $SWAGGER_URL"
+
+      - name: Download Swagger JSON
+        run: |
+          SWAGGER_URL="${{ steps.payload.outputs.swagger_url }}"
+          mkdir -p Temp
+          curl -L -o Temp/swagger.json "$SWAGGER_URL"
+          echo "Downloaded Swagger JSON:"
+          ls -lh Temp/swagger.json
+
+      - name: Generate C# client
+        run: |
+          openapi-generator-cli generate \
+            -i Temp/swagger.json \
+            -g csharp \
+            -o Temp/Api \
+            -c api-generate-config.json
+
+          echo "Generated client files:"
+          ls -la Temp/Api/src/Matuyuhi.LudiscanApi.Client/
+
+      - name: Build C# client
+        run: |
+          cd Temp/Api
+          dotnet build -c Release
+          cd ../../
+
+          echo "Build completed. Checking output:"
+          ls -lh Temp/Api/src/Matuyuhi.LudiscanApi.Client/bin/Release/netstandard2.1/
+
+      - name: Copy DLL to Unity project
+        run: |
+          cp -f Temp/Api/src/Matuyuhi.LudiscanApi.Client/bin/Release/netstandard2.1/Matuyuhi.LudiscanApi.Client.dll \
+            Assets/Matuyuhi/LudiscanApiClient/Runtime/Plugins/
+
+          echo "DLL copied to Unity project:"
+          ls -lh Assets/Matuyuhi/LudiscanApiClient/Runtime/Plugins/Matuyuhi.LudiscanApi.Client.dll
+
+      - name: Update package version
+        run: |
+          VERSION="${{ steps.payload.outputs.version }}"
+
+          # Update package.json version
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" Assets/Matuyuhi/LudiscanApiClient/package.json
+
+          echo "Updated package.json:"
+          grep "version" Assets/Matuyuhi/LudiscanApiClient/package.json
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected:"
+            git diff --cached --stat
+          fi
+
+      - name: Create PR branch and commit
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          VERSION="${{ steps.payload.outputs.version }}"
+          SWAGGER_URL="${{ steps.payload.outputs.swagger_url }}"
+          BRANCH_NAME="auto/update-client-$VERSION-$(date +%s)"
+
+          # Create and switch to new branch
+          git checkout -b "$BRANCH_NAME"
+
+          # Commit changes
+          git commit -m "chore: Update Unity C# client to version $VERSION" \
+            -m "" \
+            -m "Auto-generated from Swagger spec update." \
+            -m "- Regenerated C# client DLL" \
+            -m "- Updated package version to $VERSION" \
+            -m "" \
+            -m "Triggered by: swagger_updated event" \
+            -m "Swagger URL: $SWAGGER_URL"
+
+          # Push to remote
+          git push -u origin "$BRANCH_NAME"
+
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+        id: create_branch
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          VERSION="${{ steps.payload.outputs.version }}"
+          SWAGGER_URL="${{ steps.payload.outputs.swagger_url }}"
+          BRANCH_NAME="${{ steps.create_branch.outputs.branch_name }}"
+
+          # Create PR body
+          cat > pr_body.md << EOF
+          ## Summary
+
+          Auto-generated update of Unity C# API client.
+
+          ### Changes
+          - 🔄 Regenerated C# client DLL from latest Swagger specification
+          - 📦 Updated package version to **${VERSION}**
+
+          ### Details
+          - **Triggered by**: swagger_updated event from API repository
+          - **Swagger URL**: ${SWAGGER_URL}
+          - **Version**: ${VERSION}
+
+          ### Test Plan
+          - [ ] Verify the DLL is properly generated and placed in Runtime/Plugins/
+          - [ ] Check that package.json version is updated correctly
+          - [ ] Test integration with Unity project
+          - [ ] Verify API compatibility
+
+          ---
+
+          *This PR was automatically created by the Generate Unity C# Client workflow*
+          EOF
+
+          gh pr create \
+            --title "chore: Update Unity C# client to version $VERSION" \
+            --body-file pr_body.md \
+            --base main \
+            --head "$BRANCH_NAME"
+
+          echo "✅ Pull request created successfully!"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          VERSION="${{ steps.payload.outputs.version }}"
+          echo "## Unity C# Client Update Complete! 🎉" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- **Swagger URL**: ${{ steps.payload.outputs.swagger_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ steps.create_branch.outputs.branch_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "A pull request has been created for review." >> $GITHUB_STEP_SUMMARY
+
+      - name: No changes summary
+        if: steps.changes.outputs.has_changes == 'false'
+        run: |
+          echo "## No Changes Detected ℹ️" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The generated client is identical to the current version." >> $GITHUB_STEP_SUMMARY
+          echo "No pull request was created." >> $GITHUB_STEP_SUMMARY
