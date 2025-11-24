@@ -32,7 +32,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
         [Header("Capture Settings")]
         [SerializeField] private float captureInterval = 0.5f;
         [SerializeField] private int bufferSize = 4;
-        [SerializeField] [Range(0.1f, 1.0f)] private float screenshotScale = 0.25f;
+        [SerializeField] [Range(0.1f, 1.0f)] private float screenshotScale = 1.0f;
         [SerializeField] [Range(1, 100)] private int jpegQuality = 50;
 
         [Header("Runtime Status")]
@@ -61,6 +61,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
             public int WriteIndex;
             public int FrameCount;
             public bool PendingCapture;
+            public Rect LastViewportRect;  // ビューポート変更を検出
 
             public struct FrameData
             {
@@ -330,15 +331,29 @@ namespace LudiscanApiClient.Runtime.ApiClient
 
         private PlayerCaptureData CreatePlayerCaptureData(int playerId, Camera camera)
         {
+            // カメラのビューポートを考慮したキャプチャ解像度を計算
+            int effectiveWidth = captureWidth;
+            int effectiveHeight = captureHeight;
+            Rect viewportRect = new Rect(0, 0, 1, 1);  // デフォルト：フルスクリーン
+
+            if (camera != null)
+            {
+                viewportRect = camera.rect;
+                // ビューポートのサイズに応じてキャプチャ解像度を調整
+                effectiveWidth = Mathf.Max(64, Mathf.RoundToInt(Screen.width * screenshotScale * viewportRect.width));
+                effectiveHeight = Mathf.Max(64, Mathf.RoundToInt(Screen.height * screenshotScale * viewportRect.height));
+            }
+
             var data = new PlayerCaptureData
             {
                 PlayerId = playerId,
                 Camera = camera,
-                CaptureRT = new RenderTexture(captureWidth, captureHeight, 24, RenderTextureFormat.ARGB32),
+                CaptureRT = new RenderTexture(effectiveWidth, effectiveHeight, 24, RenderTextureFormat.ARGB32),
                 FrameBuffer = new PlayerCaptureData.FrameData[bufferSize],
                 WriteIndex = 0,
                 FrameCount = 0,
-                PendingCapture = false
+                PendingCapture = false,
+                LastViewportRect = viewportRect
             };
 
             data.CaptureRT.Create();
@@ -347,9 +362,9 @@ namespace LudiscanApiClient.Runtime.ApiClient
             {
                 data.FrameBuffer[i] = new PlayerCaptureData.FrameData
                 {
-                    RawPixels = new byte[captureWidth * captureHeight * 3],
-                    Width = captureWidth,
-                    Height = captureHeight,
+                    RawPixels = new byte[effectiveWidth * effectiveHeight * 3],
+                    Width = effectiveWidth,
+                    Height = effectiveHeight,
                     IsValid = false
                 };
             }
@@ -427,10 +442,24 @@ namespace LudiscanApiClient.Runtime.ApiClient
             {
                 data.PendingCapture = true;
 
+                // ビューポート変更を検出して、RenderTextureを再作成
+                if (data.Camera.rect != data.LastViewportRect)
+                {
+                    Debug.Log($"EventScreenshotCapture: Viewport changed for player {data.PlayerId}. Recreating RenderTexture.");
+                    RecreateRenderTextureForCamera(data);
+                }
+
                 var prevRT = data.Camera.targetTexture;
+                var prevViewport = data.Camera.rect;
+
+                // RenderTexture にレンダリング時は全ビューポートを使用
                 data.Camera.targetTexture = data.CaptureRT;
+                data.Camera.rect = new Rect(0, 0, 1, 1);
                 data.Camera.Render();
+
+                // 復元
                 data.Camera.targetTexture = prevRT;
+                data.Camera.rect = prevViewport;
 
                 AsyncGPUReadback.Request(data.CaptureRT, 0, TextureFormat.RGB24, (request) =>
                 {
@@ -442,6 +471,46 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 Debug.LogError($"EventScreenshotCapture: Capture failed for player {data.PlayerId}: {ex.Message}");
                 data.PendingCapture = false;
             }
+        }
+
+        /// <summary>
+        /// ビューポート変更時にRenderTextureを再作成します
+        /// </summary>
+        private void RecreateRenderTextureForCamera(PlayerCaptureData data)
+        {
+            // 古いRenderTextureを解放
+            if (data.CaptureRT != null)
+            {
+                data.CaptureRT.Release();
+                Destroy(data.CaptureRT);
+            }
+
+            // ビューポート情報を更新
+            data.LastViewportRect = data.Camera.rect;
+            Rect viewportRect = data.Camera.rect;
+
+            // 新しいキャプチャ解像度を計算
+            int newWidth = Mathf.Max(64, Mathf.RoundToInt(Screen.width * screenshotScale * viewportRect.width));
+            int newHeight = Mathf.Max(64, Mathf.RoundToInt(Screen.height * screenshotScale * viewportRect.height));
+
+            // 新しいRenderTextureを作成
+            data.CaptureRT = new RenderTexture(newWidth, newHeight, 24, RenderTextureFormat.ARGB32);
+            data.CaptureRT.Create();
+
+            // フレームバッファを再作成
+            for (int i = 0; i < bufferSize; i++)
+            {
+                data.FrameBuffer[i] = new PlayerCaptureData.FrameData
+                {
+                    RawPixels = new byte[newWidth * newHeight * 3],
+                    Width = newWidth,
+                    Height = newHeight,
+                    IsValid = false
+                };
+            }
+
+            Debug.Log($"EventScreenshotCapture: RenderTexture recreated for player {data.PlayerId} " +
+                      $"({newWidth}x{newHeight}, viewport: {viewportRect.width:F2}x{viewportRect.height:F2})");
         }
 
         private void CaptureScreenDefault(PlayerCaptureData data)
