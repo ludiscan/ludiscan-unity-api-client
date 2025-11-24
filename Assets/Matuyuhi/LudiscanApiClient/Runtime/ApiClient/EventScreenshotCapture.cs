@@ -334,7 +334,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
             {
                 PlayerId = playerId,
                 Camera = camera,
-                CaptureRT = new RenderTexture(captureWidth, captureHeight, 0, RenderTextureFormat.ARGB32),
+                CaptureRT = new RenderTexture(captureWidth, captureHeight, 24, RenderTextureFormat.ARGB32),
                 FrameBuffer = new PlayerCaptureData.FrameData[bufferSize],
                 WriteIndex = 0,
                 FrameCount = 0,
