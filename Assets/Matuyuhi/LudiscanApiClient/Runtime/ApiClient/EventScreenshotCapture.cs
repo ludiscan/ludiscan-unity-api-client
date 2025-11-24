@@ -223,10 +223,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 PlayerCaptureData captureData = null;
 
                 // 登録済みカメラがあればそれを使用、なければデフォルト
-                if (!playerCaptures.TryGetValue(playerId, out captureData))
-                {
-                    captureData = defaultCapture;
-                }
+                captureData = playerCaptures.GetValueOrDefault(playerId, defaultCapture);
 
                 if (captureData != null && !captureData.PendingCapture && captureData.CaptureRT != null)
                 {
@@ -390,9 +387,9 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 effectiveWidth = Mathf.Max(64, Mathf.RoundToInt(Screen.width * screenshotScale * viewportRect.width));
                 effectiveHeight = Mathf.Max(64, Mathf.RoundToInt(Screen.height * screenshotScale * viewportRect.height));
 
-                Debug.Log($"EventScreenshotCapture: Creating capture data for player {playerId} " +
-                          $"(Camera: '{camera.name}', Viewport: {viewportRect}, " +
-                          $"Resolution: {effectiveWidth}x{effectiveHeight})");
+                // Debug.Log($"EventScreenshotCapture: Creating capture data for player {playerId} " +
+                //           $"(Camera: '{camera.name}', Viewport: {viewportRect}, " +
+                //           $"Resolution: {effectiveWidth}x{effectiveHeight})");
             }
 
             var data = new PlayerCaptureData
@@ -410,8 +407,8 @@ namespace LudiscanApiClient.Runtime.ApiClient
             data.CaptureRT.Create();
 
             // RenderTexture 作成後の検証ログ
-            Debug.Log($"EventScreenshotCapture: RenderTexture created for player {playerId} " +
-                      $"({data.CaptureRT.width}x{data.CaptureRT.height}, format: {data.CaptureRT.format})");
+            // Debug.Log($"EventScreenshotCapture: RenderTexture created for player {playerId} " +
+            //           $"({data.CaptureRT.width}x{data.CaptureRT.height}, format: {data.CaptureRT.format})");
 
             for (int i = 0; i < bufferSize; i++)
             {
@@ -500,7 +497,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 // ビューポート変更を検出して、RenderTextureを再作成
                 if (data.Camera.rect != data.LastViewportRect)
                 {
-                    Debug.Log($"EventScreenshotCapture: Viewport changed for player {data.PlayerId}. Recreating RenderTexture.");
+                    // Debug.Log($"EventScreenshotCapture: Viewport changed for player {data.PlayerId}. Recreating RenderTexture.");
                     RecreateRenderTextureForCamera(data);
                 }
 
@@ -508,12 +505,12 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 var prevViewport = data.Camera.rect;
 
                 // デバッグ情報
-                Debug.Log($"EventScreenshotCapture [Player {data.PlayerId}] Capture start:" +
-                          $"\n  Camera: '{data.Camera.name}'" +
-                          $"\n  Original Viewport: {prevViewport.x:F3},{prevViewport.y:F3} {prevViewport.width:F3}x{prevViewport.height:F3}" +
-                          $"\n  Screen Size: {Screen.width}x{Screen.height}" +
-                          $"\n  RenderTexture: {data.CaptureRT.width}x{data.CaptureRT.height}" +
-                          $"\n  Expected Data Size: {data.CaptureRT.width * data.CaptureRT.height * 3} bytes (RGB24)");
+                // Debug.Log($"EventScreenshotCapture [Player {data.PlayerId}] Capture start:" +
+                //           $"\n  Camera: '{data.Camera.name}'" +
+                //           $"\n  Original Viewport: {prevViewport.x:F3},{prevViewport.y:F3} {prevViewport.width:F3}x{prevViewport.height:F3}" +
+                //           $"\n  Screen Size: {Screen.width}x{Screen.height}" +
+                //           $"\n  RenderTexture: {data.CaptureRT.width}x{data.CaptureRT.height}" +
+                //           $"\n  Expected Data Size: {data.CaptureRT.width * data.CaptureRT.height * 3} bytes (RGB24)");
 
                 // RenderTexture にレンダリング時は全ビューポートを使用
                 data.Camera.targetTexture = data.CaptureRT;
@@ -575,9 +572,9 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 };
             }
 
-            Debug.Log($"EventScreenshotCapture: RenderTexture recreated for player {data.PlayerId} " +
-                      $"({oldWidth}x{oldHeight} → {newWidth}x{newHeight}, " +
-                      $"viewport: {viewportRect.x:F2},{viewportRect.y:F2} {viewportRect.width:F2}x{viewportRect.height:F2})");
+            // Debug.Log($"EventScreenshotCapture: RenderTexture recreated for player {data.PlayerId} " +
+            //           $"({oldWidth}x{oldHeight} → {newWidth}x{newHeight}, " +
+            //           $"viewport: {viewportRect.x:F2},{viewportRect.y:F2} {viewportRect.width:F2}x{viewportRect.height:F2})");
         }
 
         private void CaptureScreenDefault(PlayerCaptureData data)
@@ -635,11 +632,11 @@ namespace LudiscanApiClient.Runtime.ApiClient
                     // データサイズの整合性をチェック
                     int expectedSize = frame.Width * frame.Height * 3;  // RGB24 = 3 bytes per pixel
 
-                    Debug.Log($"EventScreenshotCapture [Player {data.PlayerId}] GPU Readback complete:" +
-                              $"\n  Frame Size: {frame.Width}x{frame.Height}" +
-                              $"\n  Expected Data: {expectedSize} bytes" +
-                              $"\n  Actual Data: {rawData.Length} bytes" +
-                              $"\n  Match: {(rawData.Length == expectedSize ? "OK" : "MISMATCH")}");
+                    // Debug.Log($"EventScreenshotCapture [Player {data.PlayerId}] GPU Readback complete:" +
+                    //           $"\n  Frame Size: {frame.Width}x{frame.Height}" +
+                    //           $"\n  Expected Data: {expectedSize} bytes" +
+                    //           $"\n  Actual Data: {rawData.Length} bytes" +
+                    //           $"\n  Match: {(rawData.Length == expectedSize ? "OK" : "MISMATCH")}");
 
                     if (rawData.Length != expectedSize)
                     {
