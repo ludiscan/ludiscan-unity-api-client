@@ -385,6 +385,10 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 // ビューポートのサイズに応じてキャプチャ解像度を調整
                 effectiveWidth = Mathf.Max(64, Mathf.RoundToInt(Screen.width * screenshotScale * viewportRect.width));
                 effectiveHeight = Mathf.Max(64, Mathf.RoundToInt(Screen.height * screenshotScale * viewportRect.height));
+
+                Debug.Log($"EventScreenshotCapture: Creating capture data for player {playerId} " +
+                          $"(Camera: '{camera.name}', Viewport: {viewportRect}, " +
+                          $"Resolution: {effectiveWidth}x{effectiveHeight})");
             }
 
             var data = new PlayerCaptureData
@@ -400,6 +404,10 @@ namespace LudiscanApiClient.Runtime.ApiClient
             };
 
             data.CaptureRT.Create();
+
+            // RenderTexture 作成後の検証ログ
+            Debug.Log($"EventScreenshotCapture: RenderTexture created for player {playerId} " +
+                      $"({data.CaptureRT.width}x{data.CaptureRT.height}, format: {data.CaptureRT.format})");
 
             for (int i = 0; i < bufferSize; i++)
             {
@@ -522,6 +530,9 @@ namespace LudiscanApiClient.Runtime.ApiClient
         private void RecreateRenderTextureForCamera(PlayerCaptureData data)
         {
             // 古いRenderTextureを解放
+            int oldWidth = data.CaptureRT?.width ?? 0;
+            int oldHeight = data.CaptureRT?.height ?? 0;
+
             if (data.CaptureRT != null)
             {
                 data.CaptureRT.Release();
@@ -553,7 +564,8 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
 
             Debug.Log($"EventScreenshotCapture: RenderTexture recreated for player {data.PlayerId} " +
-                      $"({newWidth}x{newHeight}, viewport: {viewportRect.width:F2}x{viewportRect.height:F2})");
+                      $"({oldWidth}x{oldHeight} → {newWidth}x{newHeight}, " +
+                      $"viewport: {viewportRect.x:F2},{viewportRect.y:F2} {viewportRect.width:F2}x{viewportRect.height:F2})");
         }
 
         private void CaptureScreenDefault(PlayerCaptureData data)
@@ -601,10 +613,22 @@ namespace LudiscanApiClient.Runtime.ApiClient
                     }
 
                     NativeArray<byte>.Copy(rawData, frame.RawPixels, rawData.Length);
-                    frame.Width = captureWidth;
-                    frame.Height = captureHeight;
+
+                    // RenderTexture の実際のサイズを使用（ビューポート変更対応）
+                    frame.Width = data.CaptureRT.width;
+                    frame.Height = data.CaptureRT.height;
                     frame.Timestamp = Time.time;
                     frame.IsValid = true;
+
+                    // データサイズの整合性をチェック
+                    int expectedSize = frame.Width * frame.Height * 3;  // RGB24 = 3 bytes per pixel
+                    if (rawData.Length != expectedSize)
+                    {
+                        Debug.LogWarning(
+                            $"EventScreenshotCapture: Data size mismatch for player {data.PlayerId}. " +
+                            $"Expected {expectedSize} bytes ({frame.Width}x{frame.Height}), " +
+                            $"but got {rawData.Length} bytes. RenderTexture: {data.CaptureRT.width}x{data.CaptureRT.height}");
+                    }
 
                     data.FrameBuffer[data.WriteIndex] = frame;
                     data.WriteIndex = (data.WriteIndex + 1) % bufferSize;
@@ -623,6 +647,17 @@ namespace LudiscanApiClient.Runtime.ApiClient
 
             try
             {
+                // データサイズの検証
+                int expectedSize = frame.Width * frame.Height * 3;  // RGB24 = 3 bytes per pixel
+                if (frame.RawPixels.Length != expectedSize)
+                {
+                    Debug.LogError(
+                        $"EventScreenshotCapture: Cannot encode JPEG due to data size mismatch. " +
+                        $"Expected {expectedSize} bytes ({frame.Width}x{frame.Height}), " +
+                        $"but RawPixels has {frame.RawPixels.Length} bytes. Skipping this frame.");
+                    return new byte[0];
+                }
+
                 var tex = new Texture2D(frame.Width, frame.Height, TextureFormat.RGB24, false);
                 tex.LoadRawTextureData(frame.RawPixels);
                 tex.Apply();
