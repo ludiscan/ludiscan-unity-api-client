@@ -208,6 +208,49 @@ namespace LudiscanApiClient.Runtime.ApiClient
         }
 
         /// <summary>
+        /// 指定プレイヤーのカメラを今すぐキャプチャします（イベント発火時用）
+        /// </summary>
+        /// <param name="playerId">プレイヤーID</param>
+        public void CaptureImmediate(int playerId)
+        {
+            if (!isCapturing) return;
+
+            lock (captureLock)
+            {
+                PlayerCaptureData captureData = null;
+
+                // 登録済みカメラがあればそれを使用、なければデフォルト
+                if (!playerCaptures.TryGetValue(playerId, out captureData))
+                {
+                    captureData = defaultCapture;
+                }
+
+                if (captureData != null && !captureData.PendingCapture && captureData.CaptureRT != null)
+                {
+                    // 次のフレーム終了時にキャプチャを実行
+                    StartCoroutine(CaptureImmediateAsync(captureData));
+                }
+            }
+        }
+
+        private IEnumerator CaptureImmediateAsync(PlayerCaptureData data)
+        {
+            yield return new WaitForEndOfFrame();
+
+            lock (captureLock)
+            {
+                if (isCapturing && data.Camera != null)
+                {
+                    CapturePlayerCamera(data);
+                }
+                else if (isCapturing && data.Camera == null)
+                {
+                    CaptureScreenDefault(data);
+                }
+            }
+        }
+
+        /// <summary>
         /// 指定プレイヤーの最新スクリーンショットを取得します
         /// </summary>
         /// <param name="playerId">プレイヤーID</param>
