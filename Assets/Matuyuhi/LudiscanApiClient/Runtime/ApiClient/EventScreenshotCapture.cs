@@ -35,6 +35,9 @@ namespace LudiscanApiClient.Runtime.ApiClient
         [SerializeField] [Range(0.1f, 1.0f)] private float screenshotScale = 1.0f;
         [SerializeField] [Range(1, 100)] private int jpegQuality = 50;
 
+        [Header("Texture Processing")]
+        [SerializeField] private bool flipTextureVertically = true;
+
         [Header("Runtime Status")]
         [SerializeField] private bool isCapturing = false;
 
@@ -329,7 +332,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// <summary>
         /// キャプチャ設定を変更します
         /// </summary>
-        public void ConfigureCapture(float interval = -1f, int bufferSize = -1, float scale = -1f, int quality = -1)
+        public void ConfigureCapture(float interval = -1f, int bufferSize = -1, float scale = -1f, int quality = -1, bool? flipVertical = null)
         {
             bool wasCapturing = isCapturing;
             if (wasCapturing) StopCapture();
@@ -338,6 +341,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
             if (bufferSize > 0) this.bufferSize = bufferSize;
             if (scale > 0) screenshotScale = Mathf.Clamp(scale, 0.1f, 1.0f);
             if (quality > 0) jpegQuality = Mathf.Clamp(quality, 1, 100);
+            if (flipVertical.HasValue) flipTextureVertically = flipVertical.Value;
 
             ReleaseAllResources();
 
@@ -503,6 +507,14 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 var prevRT = data.Camera.targetTexture;
                 var prevViewport = data.Camera.rect;
 
+                // デバッグ情報
+                Debug.Log($"EventScreenshotCapture [Player {data.PlayerId}] Capture start:" +
+                          $"\n  Camera: '{data.Camera.name}'" +
+                          $"\n  Original Viewport: {prevViewport.x:F3},{prevViewport.y:F3} {prevViewport.width:F3}x{prevViewport.height:F3}" +
+                          $"\n  Screen Size: {Screen.width}x{Screen.height}" +
+                          $"\n  RenderTexture: {data.CaptureRT.width}x{data.CaptureRT.height}" +
+                          $"\n  Expected Data Size: {data.CaptureRT.width * data.CaptureRT.height * 3} bytes (RGB24)");
+
                 // RenderTexture にレンダリング時は全ビューポートを使用
                 data.Camera.targetTexture = data.CaptureRT;
                 data.Camera.rect = new Rect(0, 0, 1, 1);
@@ -622,12 +634,19 @@ namespace LudiscanApiClient.Runtime.ApiClient
 
                     // データサイズの整合性をチェック
                     int expectedSize = frame.Width * frame.Height * 3;  // RGB24 = 3 bytes per pixel
+
+                    Debug.Log($"EventScreenshotCapture [Player {data.PlayerId}] GPU Readback complete:" +
+                              $"\n  Frame Size: {frame.Width}x{frame.Height}" +
+                              $"\n  Expected Data: {expectedSize} bytes" +
+                              $"\n  Actual Data: {rawData.Length} bytes" +
+                              $"\n  Match: {(rawData.Length == expectedSize ? "OK" : "MISMATCH")}");
+
                     if (rawData.Length != expectedSize)
                     {
                         Debug.LogWarning(
                             $"EventScreenshotCapture: Data size mismatch for player {data.PlayerId}. " +
                             $"Expected {expectedSize} bytes ({frame.Width}x{frame.Height}), " +
-                            $"but got {rawData.Length} bytes. RenderTexture: {data.CaptureRT.width}x{data.CaptureRT.height}");
+                            $"but got {rawData.Length} bytes.");
                     }
 
                     data.FrameBuffer[data.WriteIndex] = frame;
@@ -662,7 +681,10 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 tex.LoadRawTextureData(frame.RawPixels);
                 tex.Apply();
 
-                FlipTextureVertically(tex);
+                if (flipTextureVertically)
+                {
+                    FlipTextureVertically(tex);
+                }
 
                 byte[] jpeg = tex.EncodeToJPG(jpegQuality);
                 Destroy(tex);
