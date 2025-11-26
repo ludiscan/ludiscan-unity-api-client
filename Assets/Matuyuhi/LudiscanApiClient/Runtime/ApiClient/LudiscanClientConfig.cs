@@ -20,10 +20,16 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// </summary>
         public int TimeoutSeconds { get; set; } = 10;
 
+        public LudiscanClientConfig() { }
+
         public LudiscanClientConfig(string apiBaseUrl, string _xapiKey)
         {
             ApiBaseUrl = apiBaseUrl;
             XapiKey = _xapiKey;
+        }
+        public LudiscanClientConfig(string apiBaseUrl, string _xapiKey, int timeoutSeconds) : this(apiBaseUrl, _xapiKey)
+        {
+            TimeoutSeconds = timeoutSeconds;
         }
     }
 }

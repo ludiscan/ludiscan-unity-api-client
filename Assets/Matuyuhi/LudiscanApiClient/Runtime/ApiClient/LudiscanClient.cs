@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
-using System.Net.Http;
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
+using LudiscanApiClient.Runtime.ApiClient.Dto;
+using LudiscanApiClient.Runtime.ApiClient.Http;
 using LudiscanApiClient.Runtime.ApiClient.Model;
-using Matuyuhi.LudiscanApi.Client.Api;
-using Matuyuhi.LudiscanApi.Client.Client;
-using Matuyuhi.LudiscanApi.Client.Model;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -18,16 +17,17 @@ namespace LudiscanApiClient.Runtime.ApiClient
     /// </summary>
     public partial class LudiscanClient
     {
-        private static ApiClient.LudiscanClient _instance;
+        private static LudiscanClient _instance;
 
-        private LudiscanClientConfig config;
+        private readonly LudiscanClientConfig _config;
+        private readonly UnityHttpClient _httpClient;
 
         /// <summary>
         /// LudiscanClientのシングルトンインスタンスを取得します
         /// Initialize()で初期化されていない場合は例外をスローします
         /// </summary>
         /// <exception cref="InvalidOperationException">クライアントが初期化されていない場合</exception>
-        public static ApiClient.LudiscanClient Instance
+        public static LudiscanClient Instance
         {
             get
             {
@@ -52,13 +52,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
             {
                 Debug.LogWarning("LudiscanClient is already initialized. Reinitializing...");
             }
-            _instance = new ApiClient.LudiscanClient(config);
-            // Windows環境でのHTTPS証明書検証エラー対応（開発環境用）
-            if (skipCertificateValidation)
-            {
-                ServicePointManager.ServerCertificateValidationCallback =
-                    (sender, certificate, chain, sslPolicyErrors) => true;
-            }
+            _instance = new LudiscanClient(config, skipCertificateValidation);
         }
 
         /// <summary>
@@ -66,55 +60,20 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// </summary>
         /// <returns>初期化済みの場合はtrue、未初期化の場合はfalse</returns>
         public static bool IsInitialized => _instance != null;
-        private readonly AppApi defaultApi;
-        private readonly GameClientAPIApi api;
 
-        private LudiscanClient(LudiscanClientConfig clientConfig)
+        private LudiscanClient(LudiscanClientConfig config, bool skipCertificateValidation)
         {
-            this.config = clientConfig;
-            var userAgent = $"Matuyuhi.LudiscanApi.UnityClient/1.0.0 (Unity {Application.unityVersion}; {SystemInfo.operatingSystem})";
-            Debug.Log($"[LudiscanClient] Constructor called with clientConfig.ApiBaseUrl={clientConfig.ApiBaseUrl}");
+            _config = config;
+            Debug.Log($"[LudiscanClient] Constructor called with ApiBaseUrl={config.ApiBaseUrl}");
+            Debug.Log($"[LudiscanClient] Timeout: {config.TimeoutSeconds} seconds");
+            Debug.Log($"[LudiscanClient] SkipCertificateValidation: {skipCertificateValidation}");
 
-            // 接続設定
-            Debug.Log($"[LudiscanClient] Setting DefaultConnectionLimit to 10");
-            ServicePointManager.DefaultConnectionLimit = 10;
-
-            var configuration = new Configuration {
-                BasePath = clientConfig.ApiBaseUrl,
-                Timeout = TimeSpan.FromSeconds(clientConfig.TimeoutSeconds),
-                DefaultHeaders = new Dictionary<string, string> {
-                    {
-                        "Accept", "*/*"
-                    }, {
-                        "Content-Type", "application/json"
-                    },
-                },
-                UserAgent = userAgent,
-            };
-
-            Debug.Log($"[LudiscanClient] Configuration.BasePath set to: {configuration.BasePath}");
-            Debug.Log($"[LudiscanClient] Configuration.Timeout: {configuration.Timeout.TotalSeconds} seconds");
-            Debug.Log($"[LudiscanClient] ServicePointManager.DefaultConnectionLimit: {ServicePointManager.DefaultConnectionLimit}");
-
-            defaultApi = new AppApi(configuration);
-            api = new GameClientAPIApi(configuration);
-            api.ExceptionFactory = (name, response) =>
-            {
-                if ((int)response.StatusCode >= 400)
-                {
-                    try
-                    {
-                        var error = JsonConvert.DeserializeObject<DefaultErrorResponse>(response.RawContent);
-                        Debug.Log(error.Message);
-                        return new ErrorResponseException(error);
-                    }
-                    catch (Exception)
-                    {
-                        return new ApiException((int)response.StatusCode, response.ErrorText);
-                    }
-                }
-                return null;
-            };
+            _httpClient = new UnityHttpClient(
+                config.ApiBaseUrl,
+                config.XapiKey,
+                config.TimeoutSeconds,
+                skipCertificateValidation
+            );
         }
 
         /// <summary>
@@ -126,88 +85,28 @@ namespace LudiscanApiClient.Runtime.ApiClient
             try
             {
                 Debug.Log($"[LudiscanClient.Ping] ===== PING START =====");
-                Debug.Log($"[LudiscanClient.Ping] Target URL: {config.ApiBaseUrl}");
-                Debug.Log($"[LudiscanClient.Ping] XapiKey: {config.XapiKey}");
-                Debug.Log($"[LudiscanClient.Ping] Timeout: {config.TimeoutSeconds}s");
+                Debug.Log($"[LudiscanClient.Ping] Target URL: {_config.ApiBaseUrl}");
+                Debug.Log($"[LudiscanClient.Ping] XapiKey: {_config.XapiKey}");
+                Debug.Log($"[LudiscanClient.Ping] Timeout: {_config.TimeoutSeconds}s");
 
-                var task = await defaultApi.AppControllerGetPingWithHttpInfoAsync();
+                var response = await _httpClient.GetStringAsync("/ping");
 
                 Debug.Log($"[LudiscanClient.Ping] API call completed");
-                Debug.Log($"[LudiscanClient.Ping] ===== Response Object Details =====");
-                Debug.Log($"[LudiscanClient.Ping] Response StatusCode: {task.StatusCode}");
-                Debug.Log($"[LudiscanClient.Ping] Response Data: {task.Data}");
-                Debug.Log($"[LudiscanClient.Ping] Response Data type: {task.Data?.GetType().FullName ?? "null"}");
-                Debug.Log($"[LudiscanClient.Ping] Response Data == null: {task.Data == null}");
-                Debug.Log($"[LudiscanClient.Ping] Response Data string.IsNullOrEmpty: {string.IsNullOrEmpty(task.Data)}");
+                Debug.Log($"[LudiscanClient.Ping] Response StatusCode: {response.StatusCode}");
+                Debug.Log($"[LudiscanClient.Ping] Response Data: {response.Data}");
+                Debug.Log($"[LudiscanClient.Ping] Response IsSuccess: {response.IsSuccess}");
 
-                // レスポンスオブジェクト自体の情報
-                Debug.Log($"[LudiscanClient.Ping] Response object type: {task.GetType().FullName}");
-                Debug.Log($"[LudiscanClient.Ping] Response object properties:");
-                foreach (var prop in task.GetType().GetProperties())
-                {
-                    var value = prop.GetValue(task);
-                    Debug.Log($"[LudiscanClient.Ping]   {prop.Name}: {value}");
-                }
-                Debug.Log($"[LudiscanClient.Ping] ===== End Response Details =====");
-
-                bool success = task.Data == "pong";
-                Debug.Log($"[LudiscanClient.Ping] Success check (Data == \"pong\"): {success}");
+                bool success = response.IsSuccess && response.Data == "pong";
+                Debug.Log($"[LudiscanClient.Ping] Success check: {success}");
                 Debug.Log($"[LudiscanClient.Ping] ===== PING END =====");
 
                 return success;
             }
-            catch (HttpRequestException e)
-            {
-                Debug.LogError($"[LudiscanClient.Ping] ===== HttpRequestException (Network issue) =====");
-                Debug.LogError($"[LudiscanClient.Ping] Message: {e.Message}");
-
-                Exception innerEx = e.InnerException;
-                int depth = 0;
-                while (innerEx != null && depth < 5)
-                {
-                    Debug.LogError($"[LudiscanClient.Ping] InnerException (depth {depth}): {innerEx.GetType().Name} - {innerEx.Message}");
-                    innerEx = innerEx.InnerException;
-                    depth++;
-                }
-
-                Debug.LogError($"[LudiscanClient.Ping] StackTrace: {e.StackTrace}");
-                Debug.LogException(e);
-                return false;
-            }
-            catch (ApiException e)
-            {
-                Debug.LogError($"[LudiscanClient.Ping] ===== ApiException =====");
-                Debug.LogError($"[LudiscanClient.Ping] ErrorCode: {e.ErrorCode}");
-                Debug.LogError($"[LudiscanClient.Ping] Message: {e.Message}");
-
-                Exception innerEx = e.InnerException;
-                int depth = 0;
-                while (innerEx != null && depth < 5)
-                {
-                    Debug.LogError($"[LudiscanClient.Ping] InnerException (depth {depth}): {innerEx.GetType().FullName} - {innerEx.Message}");
-                    innerEx = innerEx.InnerException;
-                    depth++;
-                }
-
-                Debug.LogError($"[LudiscanClient.Ping] StackTrace: {e.StackTrace}");
-                Debug.LogException(e);
-                return false;
-            }
             catch (Exception e)
             {
-                Debug.LogError($"[LudiscanClient.Ping] ===== Unexpected Exception =====");
+                Debug.LogError($"[LudiscanClient.Ping] ===== Exception =====");
                 Debug.LogError($"[LudiscanClient.Ping] Type: {e.GetType().FullName}");
                 Debug.LogError($"[LudiscanClient.Ping] Message: {e.Message}");
-
-                Exception innerEx = e.InnerException;
-                int depth = 0;
-                while (innerEx != null && depth < 5)
-                {
-                    Debug.LogError($"[LudiscanClient.Ping] InnerException (depth {depth}): {innerEx.GetType().FullName} - {innerEx.Message}");
-                    innerEx = innerEx.InnerException;
-                    depth++;
-                }
-
                 Debug.LogError($"[LudiscanClient.Ping] StackTrace: {e.StackTrace}");
                 Debug.LogException(e);
                 return false;
@@ -223,11 +122,28 @@ namespace LudiscanApiClient.Runtime.ApiClient
         {
             try
             {
-                Debug.Log($"[LudiscanClient.GetProjects] Making API request to {config.ApiBaseUrl} with XapiKey={config.XapiKey}");
-                var res = await api.GameControllerGetProjectsWithHttpInfoAsync(config.XapiKey, 100, 0);
-                return res.Data;
+                Debug.Log($"[LudiscanClient.GetProjects] Making API request to {_config.ApiBaseUrl}");
+
+                var queryParams = new Dictionary<string, string>
+                {
+                    { "limit", "100" },
+                    { "offset", "0" }
+                };
+
+                var response = await _httpClient.GetAsync<List<ProjectResponseDto>>("/api/v0/game/projects", queryParams);
+
+                if (!response.IsSuccess)
+                {
+                    throw CreateApiException(response.StatusCode, response.ErrorMessage, response.RawContent);
+                }
+
+                return response.Data;
             }
-            catch (ApiException e)
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception e)
             {
                 Debug.LogException(e);
                 throw;
@@ -245,17 +161,30 @@ namespace LudiscanApiClient.Runtime.ApiClient
         {
             try
             {
-                CreatePlaySessionDto createPlaySessionDto = new CreatePlaySessionDto(name) {
+                var requestDto = new CreatePlaySessionDto(name)
+                {
                     AppVersion = Application.version,
                     DeviceId = SystemInfo.deviceUniqueIdentifier,
                     Platform = "Unity-" + Application.platform
                 };
-                var res = await api.GameControllerCreateSessionWithHttpInfoAsync(
-                    config.XapiKey,
-                    projectId, createPlaySessionDto
+
+                var response = await _httpClient.PostJsonAsync<PlaySessionResponseDto>(
+                    $"/api/v0/game/projects/{projectId}/sessions",
+                    requestDto
                 );
-                return res.Data;
-            } catch (ApiException e)
+
+                if (!response.IsSuccess)
+                {
+                    throw CreateApiException(response.StatusCode, response.ErrorMessage, response.RawContent);
+                }
+
+                return response.Data;
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception e)
             {
                 Debug.LogException(e);
                 throw;
@@ -286,11 +215,23 @@ namespace LudiscanApiClient.Runtime.ApiClient
             try
             {
                 var stream = CreatePositionStream(position);
-                var res = await api.GameControllerUploadPlayerPositionsWithHttpInfoAsync(
-                    config.XapiKey,
-                    projectId, sessionId, stream
+                var data = ReadStreamToBytes(stream);
+
+                var response = await _httpClient.PostFormFileAsync<DefaultSuccessResponse>(
+                    $"/api/v0/game/projects/{projectId}/sessions/{sessionId}/player-positions",
+                    data,
+                    "file"
                 );
-                if (!res.Data.Success) throw new Exception(res.Data.Message);
+
+                if (!response.IsSuccess)
+                {
+                    throw CreateApiException(response.StatusCode, response.ErrorMessage, response.RawContent);
+                }
+
+                if (!response.Data.Success)
+                {
+                    throw new Exception(response.Data.Message);
+                }
             }
             catch (Exception e)
             {
@@ -328,11 +269,23 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 }
 
                 var stream = CreateFieldObjectStream(entries);
-                var res = await api.GameControllerUploadFieldObjectLogsWithHttpInfoAsync(
-                    config.XapiKey,
-                    projectId, sessionId, stream
+                var data = ReadStreamToBytes(stream);
+
+                var response = await _httpClient.PostFormFileAsync<DefaultSuccessResponse>(
+                    $"/api/v0/game/projects/{projectId}/sessions/{sessionId}/field-object-logs",
+                    data,
+                    "file"
                 );
-                if (!res.Data.Success) throw new Exception(res.Data.Message);
+
+                if (!response.IsSuccess)
+                {
+                    throw CreateApiException(response.StatusCode, response.ErrorMessage, response.RawContent);
+                }
+
+                if (!response.Data.Success)
+                {
+                    throw new Exception(response.Data.Message);
+                }
 
                 Debug.Log($"Uploaded {entries.Length} field object logs successfully");
             }
@@ -372,13 +325,23 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 }
 
                 var stream = CreateGeneralEventStream(entries);
-                // Use the general log endpoint to upload batch of events
-                // Note: This uses a bulk upload approach similar to field objects
-                var res = await api.GameControllerUploadGeneralEventLogsWithHttpInfoAsync(
-                    config.XapiKey,
-                    projectId, sessionId, stream
+                var data = ReadStreamToBytes(stream);
+
+                var response = await _httpClient.PostFormFileAsync<DefaultSuccessResponse>(
+                    $"/api/v0/game/projects/{projectId}/sessions/{sessionId}/general-events/upload",
+                    data,
+                    "file"
                 );
-                if (!res.Data.Success) throw new Exception(res.Data.Message);
+
+                if (!response.IsSuccess)
+                {
+                    throw CreateApiException(response.StatusCode, response.ErrorMessage, response.RawContent);
+                }
+
+                if (!response.Data.Success)
+                {
+                    throw new Exception(response.Data.Message);
+                }
 
                 Debug.Log($"Uploaded {entries.Length} general event logs successfully");
             }
@@ -411,11 +374,17 @@ namespace LudiscanApiClient.Runtime.ApiClient
         {
             try
             {
-                var res = await api.GameControllerFinishSessionWithHttpInfoAsync(
-                    config.XapiKey,
-                    projectId, sessionId
+                var response = await _httpClient.PostJsonAsync<PlaySessionResponseDto>(
+                    $"/api/v0/game/projects/{projectId}/sessions/{sessionId}/finish",
+                new object()
                 );
-                return Session.FromDto(res.Data);
+
+                if (!response.IsSuccess)
+                {
+                    throw CreateApiException(response.StatusCode, response.ErrorMessage, response.RawContent);
+                }
+
+                return Session.FromDto(response.Data);
             }
             catch (Exception e)
             {
@@ -447,13 +416,22 @@ namespace LudiscanApiClient.Runtime.ApiClient
         {
             try
             {
-                var req = new UpdatePlaySessionDto();
-                req.MetaData = new { mapName = mapName };
-                var res = await api.GameControllerUpdateSessionWithHttpInfoAsync(
-                    config.XapiKey,
-                    projectId, sessionId, req
+                var requestDto = new UpdatePlaySessionDto
+                {
+                    MetaData = new { mapName = mapName }
+                };
+
+                var response = await _httpClient.PutJsonAsync<PlaySessionResponseDto>(
+                    $"/api/v0/game/projects/{projectId}/sessions/{sessionId}",
+                    requestDto
                 );
-                return Session.FromDto(res.Data);
+
+                if (!response.IsSuccess)
+                {
+                    throw CreateApiException(response.StatusCode, response.ErrorMessage, response.RawContent);
+                }
+
+                return Session.FromDto(response.Data);
             }
             catch (Exception e)
             {
@@ -486,13 +464,22 @@ namespace LudiscanApiClient.Runtime.ApiClient
         {
             try
             {
-                var req = new UpdatePlaySessionDto();
-                req.MetaData = new { score = score };
-                var res = await api.GameControllerUpdateSessionWithHttpInfoAsync(
-                    config.XapiKey,
-                    projectId, sessionId, req
+                var requestDto = new UpdatePlaySessionDto
+                {
+                    MetaData = new { score = score }
+                };
+
+                var response = await _httpClient.PutJsonAsync<PlaySessionResponseDto>(
+                    $"/api/v0/game/projects/{projectId}/sessions/{sessionId}",
+                    requestDto
                 );
-                return Session.FromDto(res.Data);
+
+                if (!response.IsSuccess)
+                {
+                    throw CreateApiException(response.StatusCode, response.ErrorMessage, response.RawContent);
+                }
+
+                return Session.FromDto(response.Data);
             }
             catch (Exception e)
             {
@@ -523,16 +510,54 @@ namespace LudiscanApiClient.Runtime.ApiClient
         {
             try
             {
-                var res = await api.GameControllerGetHeatmapEmbedUrlWithHttpInfoAsync(
-                    config.XapiKey,
-                    projectId, sessionId);
-                return res.Data.Url;
+                var response = await _httpClient.GetAsync<HeatmapEmbedUrlResponseDto>(
+                    $"/api/v0/game/projects/{projectId}/sessions/{sessionId}/heatmap-embed-url"
+                );
+
+                if (!response.IsSuccess)
+                {
+                    throw CreateApiException(response.StatusCode, response.ErrorMessage, response.RawContent);
+                }
+
+                return response.Data.Url;
             }
             catch (Exception e)
             {
                 Debug.LogException(e);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// StreamをByte配列に変換します
+        /// </summary>
+        private byte[] ReadStreamToBytes(Stream stream)
+        {
+            using var ms = new MemoryStream();
+            stream.CopyTo(ms);
+            return ms.ToArray();
+        }
+
+        /// <summary>
+        /// APIエラー例外を生成します
+        /// </summary>
+        private ApiException CreateApiException(int statusCode, string errorMessage, string rawContent)
+        {
+            try
+            {
+                var errorResponse = JsonConvert.DeserializeObject<DefaultErrorResponse>(rawContent);
+                if (errorResponse != null && !string.IsNullOrEmpty(errorResponse.Message))
+                {
+                    Debug.LogError(errorResponse.Message);
+                    return new ErrorResponseException(errorResponse);
+                }
+            }
+            catch
+            {
+                // JSON parse failed, use generic error
+            }
+
+            return new ApiException(statusCode, errorMessage);
         }
 
         /// <summary>

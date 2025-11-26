@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using LudiscanApiClient.Runtime.ApiClient.Model;
-using Matuyuhi.LudiscanApi.Client.Model;
 using UnityEngine;
 
 namespace LudiscanApiClient.Runtime.ApiClient
@@ -106,7 +105,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
         public void AddLog(
             string objectId,
             string objectType,
-            FieldObjectLogDto.EventTypeEnum eventType,
+            FieldObjectEventType eventType,
             Vector3 position,
             uint offsetTimestamp,
             object status = null
@@ -153,7 +152,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// </summary>
         public void LogItemSpawn(string itemId, string itemType, Vector3 position, uint offsetTimestamp, object metadata = null)
         {
-            AddLog(itemId, itemType, FieldObjectLogDto.EventTypeEnum.Spawn, position, offsetTimestamp, metadata);
+            AddLog(itemId, itemType, FieldObjectEventType.Spawn, position, offsetTimestamp, metadata);
         }
 
         /// <summary>
@@ -162,7 +161,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
         public void LogItemDespawn(string itemId, string itemType, Vector3 position, uint offsetTimestamp, int pickedByPlayer = -1)
         {
             var status = pickedByPlayer >= 0 ? new { picked_by = pickedByPlayer } : null;
-            AddLog(itemId, itemType, FieldObjectLogDto.EventTypeEnum.Despawn, position, offsetTimestamp, status);
+            AddLog(itemId, itemType, FieldObjectEventType.Despawn, position, offsetTimestamp, status);
         }
 
         /// <summary>
@@ -170,7 +169,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// </summary>
         public void LogEnemySpawn(string enemyId, string enemyType, Vector3 position, uint offsetTimestamp, object metadata = null)
         {
-            AddLog(enemyId, enemyType, FieldObjectLogDto.EventTypeEnum.Spawn, position, offsetTimestamp, metadata);
+            AddLog(enemyId, enemyType, FieldObjectEventType.Spawn, position, offsetTimestamp, metadata);
         }
 
         /// <summary>
@@ -178,7 +177,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// </summary>
         public void LogEnemyMove(string enemyId, string enemyType, Vector3 position, uint offsetTimestamp)
         {
-            AddLog(enemyId, enemyType, FieldObjectLogDto.EventTypeEnum.Move, position, offsetTimestamp);
+            AddLog(enemyId, enemyType, FieldObjectEventType.Move, position, offsetTimestamp);
         }
 
         /// <summary>
@@ -187,7 +186,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
         public void LogEnemyDeath(string enemyId, string enemyType, Vector3 position, uint offsetTimestamp, int killedByPlayer = -1)
         {
             var status = killedByPlayer >= 0 ? new { killed_by = killedByPlayer } : null;
-            AddLog(enemyId, enemyType, FieldObjectLogDto.EventTypeEnum.Despawn, position, offsetTimestamp, status);
+            AddLog(enemyId, enemyType, FieldObjectEventType.Despawn, position, offsetTimestamp, status);
         }
 
         /// <summary>
@@ -195,7 +194,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// </summary>
         public void LogObjectUpdate(string objectId, string objectType, Vector3 position, uint offsetTimestamp, object status)
         {
-            AddLog(objectId, objectType, FieldObjectLogDto.EventTypeEnum.Update, position, offsetTimestamp, status);
+            AddLog(objectId, objectType, FieldObjectEventType.Update, position, offsetTimestamp, status);
         }
 
         /// <summary>

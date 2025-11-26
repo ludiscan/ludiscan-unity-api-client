@@ -5,182 +5,96 @@ on:
     types: [swagger_updated]
 
 jobs:
-  generate-client:
+  generate:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Configure Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          dotnet-version: '6.0.x'
-
-      - name: Setup Java (required for openapi-generator)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+          node-version: '20'
 
       - name: Install OpenAPI Generator CLI
-        run: |
-          npm install -g @openapitools/openapi-generator-cli
-          openapi-generator-cli version-manager set 7.12.0
-
-      - name: Extract event payload
-        id: payload
-        run: |
-          VERSION="${{ github.event.client_payload.version }}"
-          SWAGGER_URL="${{ github.event.client_payload.swagger_url }}"
-
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "swagger_url=$SWAGGER_URL" >> $GITHUB_OUTPUT
-          echo "Received version: $VERSION"
-          echo "Swagger URL: $SWAGGER_URL"
+        run: npm install -g @openapitools/openapi-generator-cli
 
       - name: Download Swagger JSON
         run: |
-          SWAGGER_URL="${{ steps.payload.outputs.swagger_url }}"
+          SWAGGER_URL="${{ github.event.client_payload.swagger_url }}"
           mkdir -p Temp
           curl -L -o Temp/swagger.json "$SWAGGER_URL"
           echo "Downloaded Swagger JSON:"
           ls -lh Temp/swagger.json
 
-      - name: Generate C# client
+      - name: Generate DTO classes
         run: |
+          DTO_OUTPUT_DIR="Assets/Matuyuhi/LudiscanApiClient/Runtime/ApiClient/Dto"
+          TEMP_DIR="Temp/Api"
+
+          mkdir -p "$DTO_OUTPUT_DIR"
+
           openapi-generator-cli generate \
             -i Temp/swagger.json \
             -g csharp \
-            -o Temp/Api \
-            -c api-generate-config.json
+            -o "$TEMP_DIR" \
+            -c api-generate-config.json \
+            --global-property models,modelDocs=false,modelTests=false
 
-          echo "Generated client files:"
-          ls -la Temp/Api/src/Matuyuhi.LudiscanApi.Client/
+          echo "Copying and fixing generated models..."
+          FOUND_DIR=$(find "$TEMP_DIR" -type d -name "Model" | head -1)
 
-      - name: Build C# client
-        run: |
-          cd Temp/Api
-          dotnet build -c Release
-          cd ../../
-
-          echo "Build completed. Checking output:"
-          ls -lh Temp/Api/src/Matuyuhi.LudiscanApi.Client/bin/Release/netstandard2.1/
-
-      - name: Copy DLL to Unity project
-        run: |
-          cp -f Temp/Api/src/Matuyuhi.LudiscanApi.Client/bin/Release/netstandard2.1/Matuyuhi.LudiscanApi.Client.dll \
-            Assets/Matuyuhi/LudiscanApiClient/Runtime/Plugins/
-
-          echo "DLL copied to Unity project:"
-          ls -lh Assets/Matuyuhi/LudiscanApiClient/Runtime/Plugins/Matuyuhi.LudiscanApi.Client.dll
-
-      - name: Check for changes
-        id: changes
-        run: |
-          git add -A
-          if git diff --cached --quiet; then
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "No changes detected"
+          if [ -n "$FOUND_DIR" ] && [ -d "$FOUND_DIR" ]; then
+            echo "Found model directory: $FOUND_DIR"
+            for f in "$FOUND_DIR"/*.cs; do
+              if [ -f "$f" ]; then
+                filename=$(basename "$f")
+                echo "  Processing: $filename"
+                # Linux sed (no empty string after -i)
+                sed -i \
+                  -e '/using FileParameter/d' \
+                  -e '/using OpenAPIDateConverter/d' \
+                  -e 's/namespace LudiscanApiClient\.Runtime\.ApiClient\.Dto\.Model/namespace LudiscanApiClient.Runtime.ApiClient.Dto/' \
+                  "$f"
+                cp -f "$f" "$DTO_OUTPUT_DIR/"
+              fi
+            done
+            echo "DTO classes generated successfully in $DTO_OUTPUT_DIR"
           else
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "Changes detected:"
-            git diff --cached --stat
+            echo "Warning: Generated model directory not found"
+            echo "Searching for .cs files..."
+            find "$TEMP_DIR" -name "*.cs" 2>/dev/null | head -20
           fi
 
-      - name: Create PR branch and commit
-        if: steps.changes.outputs.has_changes == 'true'
+      - name: Clean temporary files
+        run: rm -rf Temp/
+
+      - name: Check for changes
+        id: git-check
         run: |
-          VERSION="${{ steps.payload.outputs.version }}"
-          SWAGGER_URL="${{ steps.payload.outputs.swagger_url }}"
-          BRANCH_NAME="auto/update-client-$VERSION-$(date +%s)"
-
-          # Create and switch to new branch
-          git checkout -b "$BRANCH_NAME"
-
-          # Commit changes
-          git commit -m "chore: Update Unity C# client to version $VERSION" \
-            -m "" \
-            -m "Auto-generated from Swagger spec update." \
-            -m "- Regenerated C# client DLL" \
-            -m "" \
-            -m "Triggered by: swagger_updated event" \
-            -m "Swagger URL: $SWAGGER_URL"
-
-          # Push to remote
-          git push -u origin "$BRANCH_NAME"
-
-          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
-        id: create_branch
+          git diff --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
 
       - name: Create Pull Request
-        if: steps.changes.outputs.has_changes == 'true'
-        run: |
-          VERSION="${{ steps.payload.outputs.version }}"
-          SWAGGER_URL="${{ steps.payload.outputs.swagger_url }}"
-          BRANCH_NAME="${{ steps.create_branch.outputs.branch_name }}"
+        if: steps.git-check.outputs.changes == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: Update DTO classes from Swagger v${{ github.event.client_payload.version }}"
+          title: "Update DTO classes from Swagger v${{ github.event.client_payload.version }}"
+          body: |
+            This PR was automatically generated by the `generate-client` workflow.
 
-          # Create PR body
-          cat > pr_body.md << EOF
-          ## Summary
+            ## Changes
+            - Updated DTO classes from Swagger specification
+            - Swagger version: ${{ github.event.client_payload.version }}
+            - Swagger URL: ${{ github.event.client_payload.swagger_url }}
 
-          Auto-generated update of Unity C# API client.
-
-          ### Changes
-          - 🔄 Regenerated C# client DLL from latest Swagger specification
-
-          ### Details
-          - **Triggered by**: swagger_updated event from API repository
-          - **Swagger URL**: ${SWAGGER_URL}
-          - **Version**: ${VERSION}
-
-          ### Test Plan
-          - [ ] Verify the DLL is properly generated and placed in Runtime/Plugins/
-          - [ ] Test integration with Unity project
-          - [ ] Verify API compatibility
-
-          ---
-
-          *This PR was automatically created by the Generate Unity C# Client workflow*
-          EOF
-
-          gh pr create \
-            --title "chore: Update Unity C# client to version $VERSION" \
-            --body-file pr_body.md \
-            --base main \
-            --head "$BRANCH_NAME"
-
-          echo "✅ Pull request created successfully!"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Summary
-        if: steps.changes.outputs.has_changes == 'true'
-        run: |
-          VERSION="${{ steps.payload.outputs.version }}"
-          echo "## Unity C# Client Update Complete! 🎉" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: $VERSION" >> $GITHUB_STEP_SUMMARY
-          echo "- **Swagger URL**: ${{ steps.payload.outputs.swagger_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch**: ${{ steps.create_branch.outputs.branch_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "A pull request has been created for review." >> $GITHUB_STEP_SUMMARY
-
-      - name: No changes summary
-        if: steps.changes.outputs.has_changes == 'false'
-        run: |
-          echo "## No Changes Detected ℹ️" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The generated client is identical to the current version." >> $GITHUB_STEP_SUMMARY
-          echo "No pull request was created." >> $GITHUB_STEP_SUMMARY
+            ## Notes
+            - DTO classes are generated using OpenAPI Generator
+            - The API client uses UnityWebRequest (not RestSharp)
+          branch: "swagger-update/v${{ github.event.client_payload.version }}"
+          base: main
+          labels: |
+            automated
+            swagger-update

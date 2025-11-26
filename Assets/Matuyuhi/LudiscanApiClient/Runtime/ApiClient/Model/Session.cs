@@ -1,5 +1,5 @@
 using System;
-using Matuyuhi.LudiscanApi.Client.Model;
+using LudiscanApiClient.Runtime.ApiClient.Dto;
 
 namespace LudiscanApiClient.Runtime.ApiClient.Model
 {

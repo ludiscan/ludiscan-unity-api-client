@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using LudiscanApiClient.Runtime.ApiClient;
+using LudiscanApiClient.Runtime.ApiClient.Dto;
 using LudiscanApiClient.Runtime.ApiClient.Model;
 using UnityEngine;
 
@@ -87,7 +88,7 @@ namespace LudiscanApiClient.Examples
         /// <summary>
         /// プロジェクト一覧を取得
         /// </summary>
-        private async Task<List<Matuyuhi.LudiscanApi.Client.Model.ProjectResponseDto>> GetProjects()
+        private async Task<List<ProjectResponseDto>> GetProjects()
         {
             Debug.Log("Fetching projects...");
             try

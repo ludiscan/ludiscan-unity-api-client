@@ -1,8 +1,22 @@
-using Matuyuhi.LudiscanApi.Client.Model;
 using UnityEngine;
 
 namespace LudiscanApiClient.Runtime.ApiClient.Model
 {
+    /// <summary>
+    /// フィールドオブジェクトのイベントタイプ
+    /// </summary>
+    public enum FieldObjectEventType : byte
+    {
+        /// <summary>オブジェクトがスポーン（出現）</summary>
+        Spawn = 0,
+        /// <summary>オブジェクトが移動</summary>
+        Move = 1,
+        /// <summary>オブジェクトの状態が更新</summary>
+        Update = 2,
+        /// <summary>オブジェクトがデスポーン（消滅）</summary>
+        Despawn = 3
+    }
+
     /// <summary>
     /// フィールドオブジェクト（アイテム、敵など）のイベント情報を表すエンティティ
     /// FieldObjectLoggerで使用され、オブジェクトの出現・移動・消滅などのイベントを記録します
@@ -71,6 +85,6 @@ namespace LudiscanApiClient.Runtime.ApiClient.Model
         /// <summary>
         /// イベントの種類（Spawn, Move, Update, Despawn）
         /// </summary>
-        public FieldObjectLogDto.EventTypeEnum EventType;
+        public FieldObjectEventType EventType;
     }
 }

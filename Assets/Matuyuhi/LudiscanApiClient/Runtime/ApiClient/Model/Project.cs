@@ -1,5 +1,5 @@
 using System;
-using Matuyuhi.LudiscanApi.Client.Model;
+using LudiscanApiClient.Runtime.ApiClient.Dto;
 
 namespace LudiscanApiClient.Runtime.ApiClient.Model
 {
@@ -43,7 +43,7 @@ namespace LudiscanApiClient.Runtime.ApiClient.Model
         {
             return new()
             {
-                Id = (int)dto.Id,
+                Id = decimal.ToInt32(dto.Id),
                 Name = dto.Name,
                 Description = dto.Description,
                 CreatedAt = dto.CreatedAt,
