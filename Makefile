@@ -22,7 +22,6 @@ DTO_OUTPUT_DIR := Assets/Matuyuhi/LudiscanApiClient/Runtime/ApiClient/Dto/Genera
 .PHONY: gen-dto gen-dto-url clean help
 
 # Generate DTO classes from Swagger specification
-# Uses csharp-netcore generator with models-only to generate pure POCO classes
 gen-dto:
 	@echo "Generating DTO classes from $(SWAGGER_URL)..."
 	@mkdir -p $(DTO_OUTPUT_DIR)
@@ -32,16 +31,20 @@ gen-dto:
 		-o $(TEMP_DIR) \
 		-c api-generate-config.json \
 		--global-property models,modelDocs=false,modelTests=false
-	@echo "Copying generated models..."
+	@echo "Copying and fixing generated models..."
 	@FOUND_DIR=$$(find $(TEMP_DIR) -type d -name "Model" | head -1); \
 	if [ -n "$$FOUND_DIR" ] && [ -d "$$FOUND_DIR" ]; then \
 		echo "Found model directory: $$FOUND_DIR"; \
 		for f in $$FOUND_DIR/*.cs; do \
 			if [ -f "$$f" ]; then \
 				filename=$$(basename "$$f"); \
-				sed -i 's/using Newtonsoft.Json;/using Newtonsoft.Json;\nusing System.Collections.Generic;/g' "$$f" 2>/dev/null || true; \
+				echo "  Processing: $$filename"; \
+				sed -i \
+					-e '/using FileParameter/d' \
+					-e '/using OpenAPIDateConverter/d' \
+					-e 's/namespace LudiscanApiClient\.Runtime\.ApiClient\.Dto\.Model/namespace LudiscanApiClient.Runtime.ApiClient.Dto.Generated/' \
+					"$$f" 2>/dev/null || true; \
 				cp -f "$$f" $(DTO_OUTPUT_DIR)/; \
-				echo "  Copied: $$filename"; \
 			fi \
 		done; \
 		echo "DTO classes generated successfully in $(DTO_OUTPUT_DIR)"; \
@@ -62,6 +65,12 @@ clean:
 	rm -rf $(TEMP_DIR)
 	@echo "Clean complete"
 
+# Clean generated DTOs
+clean-generated:
+	@echo "Cleaning generated DTO files..."
+	rm -rf $(DTO_OUTPUT_DIR)/*.cs
+	@echo "Clean complete"
+
 # Help
 help:
 	@echo "Ludiscan Unity API Client - Build Commands"
@@ -70,6 +79,7 @@ help:
 	@echo "  make gen-dto              Generate DTO classes from local API server (localhost:3211)"
 	@echo "  make gen-dto-url URL=...  Generate DTO classes from custom Swagger URL"
 	@echo "  make clean                Clean temporary files"
+	@echo "  make clean-generated      Clean generated DTO files"
 	@echo ""
 	@echo "Prerequisites:"
 	@echo "  npm install @openapitools/openapi-generator-cli -g"

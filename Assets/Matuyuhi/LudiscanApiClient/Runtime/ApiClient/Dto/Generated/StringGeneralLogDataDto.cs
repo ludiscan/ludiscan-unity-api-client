@@ -20,10 +20,8 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
-using FileParameter = LudiscanApiClient.Runtime.ApiClient.Dto.Client.FileParameter;
-using OpenAPIDateConverter = LudiscanApiClient.Runtime.ApiClient.Dto.Client.OpenAPIDateConverter;
 
-namespace LudiscanApiClient.Runtime.ApiClient.Dto.Model
+namespace LudiscanApiClient.Runtime.ApiClient.Dto.Generated
 {
     /// <summary>
     /// StringGeneralLogDataDto
