@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using LudiscanApiClient.Runtime.ApiClient.Dto;
 using LudiscanApiClient.Runtime.ApiClient.Http;
@@ -88,7 +89,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 Debug.Log($"[LudiscanClient.Ping] XapiKey: {_config.XapiKey}");
                 Debug.Log($"[LudiscanClient.Ping] Timeout: {_config.TimeoutSeconds}s");
 
-                var response = await _httpClient.GetStringAsync("/api/app/ping");
+                var response = await _httpClient.GetStringAsync("/ping");
 
                 Debug.Log($"[LudiscanClient.Ping] API call completed");
                 Debug.Log($"[LudiscanClient.Ping] Response StatusCode: {response.StatusCode}");
@@ -129,7 +130,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
                     { "offset", "0" }
                 };
 
-                var response = await _httpClient.GetAsync<List<ProjectResponseDto>>("/api/game-client/projects", queryParams);
+                var response = await _httpClient.GetAsync<List<ProjectResponseDto>>("/api/v0/game/projects", queryParams);
 
                 if (!response.IsSuccess)
                 {
@@ -168,7 +169,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 };
 
                 var response = await _httpClient.PostJsonAsync<PlaySessionResponseDto>(
-                    $"/api/game-client/projects/{projectId}/sessions",
+                    $"/api/v0/game/projects/{projectId}/sessions",
                     requestDto
                 );
 
@@ -216,9 +217,10 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 var stream = CreatePositionStream(position);
                 var data = ReadStreamToBytes(stream);
 
-                var response = await _httpClient.PostBinaryAsync<UploadResultDto>(
-                    $"/api/game-client/projects/{projectId}/sessions/{sessionId}/player-positions",
-                    data
+                var response = await _httpClient.PostFormFileAsync<DefaultSuccessResponse>(
+                    $"/api/v0/game/projects/{projectId}/sessions/{sessionId}/player-positions",
+                    data,
+                    "file"
                 );
 
                 if (!response.IsSuccess)
@@ -269,9 +271,10 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 var stream = CreateFieldObjectStream(entries);
                 var data = ReadStreamToBytes(stream);
 
-                var response = await _httpClient.PostBinaryAsync<UploadResultDto>(
-                    $"/api/game-client/projects/{projectId}/sessions/{sessionId}/field-object-logs",
-                    data
+                var response = await _httpClient.PostFormFileAsync<DefaultSuccessResponse>(
+                    $"/api/v0/game/projects/{projectId}/sessions/{sessionId}/field-object-logs",
+                    data,
+                    "file"
                 );
 
                 if (!response.IsSuccess)
@@ -324,9 +327,10 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 var stream = CreateGeneralEventStream(entries);
                 var data = ReadStreamToBytes(stream);
 
-                var response = await _httpClient.PostBinaryAsync<UploadResultDto>(
-                    $"/api/game-client/projects/{projectId}/sessions/{sessionId}/general-event-logs",
-                    data
+                var response = await _httpClient.PostFormFileAsync<DefaultSuccessResponse>(
+                    $"/api/v0/game/projects/{projectId}/sessions/{sessionId}/general-events/upload",
+                    data,
+                    "file"
                 );
 
                 if (!response.IsSuccess)
@@ -370,8 +374,9 @@ namespace LudiscanApiClient.Runtime.ApiClient
         {
             try
             {
-                var response = await _httpClient.PutJsonAsync<PlaySessionResponseDto>(
-                    $"/api/game-client/projects/{projectId}/sessions/{sessionId}/finish"
+                var response = await _httpClient.PostJsonAsync<PlaySessionResponseDto>(
+                    $"/api/v0/game/projects/{projectId}/sessions/{sessionId}/finish",
+                new object()
                 );
 
                 if (!response.IsSuccess)
@@ -417,7 +422,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 };
 
                 var response = await _httpClient.PutJsonAsync<PlaySessionResponseDto>(
-                    $"/api/game-client/projects/{projectId}/sessions/{sessionId}",
+                    $"/api/v0/game/projects/{projectId}/sessions/{sessionId}",
                     requestDto
                 );
 
@@ -465,7 +470,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 };
 
                 var response = await _httpClient.PutJsonAsync<PlaySessionResponseDto>(
-                    $"/api/game-client/projects/{projectId}/sessions/{sessionId}",
+                    $"/api/v0/game/projects/{projectId}/sessions/{sessionId}",
                     requestDto
                 );
 
@@ -505,8 +510,8 @@ namespace LudiscanApiClient.Runtime.ApiClient
         {
             try
             {
-                var response = await _httpClient.GetAsync<HeatmapEmbedUrlDto>(
-                    $"/api/game-client/projects/{projectId}/sessions/{sessionId}/heatmap-embed-url"
+                var response = await _httpClient.GetAsync<HeatmapEmbedUrlResponseDto>(
+                    $"/api/v0/game/projects/{projectId}/sessions/{sessionId}/heatmap-embed-url"
                 );
 
                 if (!response.IsSuccess)

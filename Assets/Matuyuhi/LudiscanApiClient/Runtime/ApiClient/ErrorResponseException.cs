@@ -20,7 +20,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// </summary>
         /// <param name="errorResponse">エラーレスポンス</param>
         public ErrorResponseException(DefaultErrorResponse errorResponse)
-            : base(errorResponse.Code, errorResponse.Message)
+            : base(decimal.ToInt32(errorResponse.Code), errorResponse.Message)
         {
             _errorResponse = errorResponse;
         }

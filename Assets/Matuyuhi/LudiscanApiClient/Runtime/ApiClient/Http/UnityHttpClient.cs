@@ -105,6 +105,27 @@ namespace LudiscanApiClient.Runtime.ApiClient.Http
         }
 
         /// <summary>
+        /// マルチパートフォームデータでファイルをアップロードします
+        /// </summary>
+        /// <typeparam name="T">レスポンスの型</typeparam>
+        /// <param name="endpoint">エンドポイント</param>
+        /// <param name="fileData">アップロードするファイルデータ</param>
+        /// <param name="fileName">ファイルフィールド名（通常は"file"）</param>
+        /// <returns>デシリアライズされたレスポンス</returns>
+        public async Task<HttpResponse<T>> PostFormFileAsync<T>(string endpoint, byte[] fileData, string fileName = "file")
+        {
+            var url = BuildUrl(endpoint, null);
+
+            WWWForm form = new WWWForm();
+            form.AddBinaryData(fileName, fileData, fileName, "application/octet-stream");
+
+            using var request = UnityWebRequest.Post(url, form);
+            request.downloadHandler = new DownloadHandlerBuffer();
+
+            return await SendRequestAsync<T>(request);
+        }
+
+        /// <summary>
         /// PUTリクエストを送信します（JSON）
         /// </summary>
         /// <typeparam name="T">レスポンスの型</typeparam>

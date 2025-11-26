@@ -109,13 +109,23 @@ namespace LudiscanApiClient.Runtime.ApiClient
 
                 bw.Write(objectIdIndex);                 // object_id_index: 4 bytes
                 bw.Write(objectTypeIndex);               // object_type_index: 4 bytes
-                bw.Write((byte)entry.EventType);         // event_type: 1 byte
+
+                // EventType の値を バイナリフォーマット（0x01-0x04）に変換
+                byte eventTypeByte = entry.EventType switch
+                {
+                    FieldObjectEventType.Spawn => 0x01,
+                    FieldObjectEventType.Move => 0x02,
+                    FieldObjectEventType.Despawn => 0x03,
+                    FieldObjectEventType.Update => 0x04,
+                    _ => 0x01  // Default to Spawn
+                };
+                bw.Write(eventTypeByte);                 // event_type: 1 byte
 
                 // 既存の座標変換ロジックを踏襲（Unity X,Y,Z → 送信 X=Z, Y=X, Z=Y, 1cmスケール）
-                bw.Write(entry.X);                // x: 4 bytes (float)
-                bw.Write(entry.Y);                // y: 4 bytes (float)
-                bw.Write(entry.Z);         // z: 4 bytes (float, nullable)
-                bw.Write(entry.OffsetTimeStamp);  // offset_timestamp: 8 bytes
+                bw.Write(entry.Z * 100f);               // x: 4 bytes (float)
+                bw.Write(entry.X * 100f);               // y: 4 bytes (float)
+                bw.Write(entry.Y * 100f);               // z: 4 bytes (float)
+                bw.Write(entry.OffsetTimeStamp);        // offset_timestamp: 8 bytes
 
                 // status
                 var sBytes = statusBytes[i] ?? Array.Empty<byte>();

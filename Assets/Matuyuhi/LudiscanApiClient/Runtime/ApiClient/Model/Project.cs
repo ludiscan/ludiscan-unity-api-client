@@ -43,7 +43,7 @@ namespace LudiscanApiClient.Runtime.ApiClient.Model
         {
             return new()
             {
-                Id = dto.Id,
+                Id = decimal.ToInt32(dto.Id),
                 Name = dto.Name,
                 Description = dto.Description,
                 CreatedAt = dto.CreatedAt,

@@ -17,7 +17,7 @@ SWAGGER_URL ?= http://localhost:3211/swagger/api/v0/json
 
 # Output directories
 TEMP_DIR := Temp/Api
-DTO_OUTPUT_DIR := Assets/Matuyuhi/LudiscanApiClient/Runtime/ApiClient/Dto/Generated
+DTO_OUTPUT_DIR := Assets/Matuyuhi/LudiscanApiClient/Runtime/ApiClient/Dto/
 
 .PHONY: gen-dto gen-dto-url clean help
 
@@ -39,11 +39,11 @@ gen-dto:
 			if [ -f "$$f" ]; then \
 				filename=$$(basename "$$f"); \
 				echo "  Processing: $$filename"; \
-				sed -i \
+				sed -i '' \
 					-e '/using FileParameter/d' \
 					-e '/using OpenAPIDateConverter/d' \
-					-e 's/namespace LudiscanApiClient\.Runtime\.ApiClient\.Dto\.Model/namespace LudiscanApiClient.Runtime.ApiClient.Dto.Generated/' \
-					"$$f" 2>/dev/null || true; \
+					-e 's/namespace LudiscanApiClient\.Runtime\.ApiClient\.Dto\.Model/namespace LudiscanApiClient.Runtime.ApiClient.Dto/' \
+					"$$f"; \
 				cp -f "$$f" $(DTO_OUTPUT_DIR)/; \
 			fi \
 		done; \
