@@ -5,5 +5,8 @@
   "useDateTimeOffset": false,
   "validatable": false,
   "equatable": false,
-  "modelPropertyNaming": "PascalCase"
+  "modelPropertyNaming": "PascalCase",
+  "useOneOfDiscriminatorLookup": false,
+  "disallowAdditionalPropertiesIfNotPresent": false,
+  "library": "httpclient"
 }

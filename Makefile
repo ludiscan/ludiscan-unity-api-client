@@ -22,23 +22,33 @@ DTO_OUTPUT_DIR := Assets/Matuyuhi/LudiscanApiClient/Runtime/ApiClient/Dto/Genera
 .PHONY: gen-dto gen-dto-url clean help
 
 # Generate DTO classes from Swagger specification
+# Uses csharp-netcore generator with models-only to generate pure POCO classes
 gen-dto:
 	@echo "Generating DTO classes from $(SWAGGER_URL)..."
 	@mkdir -p $(DTO_OUTPUT_DIR)
 	openapi-generator-cli generate \
 		-i $(SWAGGER_URL) \
-		-g csharp \
+		-g csharp-netcore \
 		-o $(TEMP_DIR) \
 		-c api-generate-config.json \
-		--global-property models \
-		--additional-properties=library=unityWebRequest
+		--global-property models,modelDocs=false,modelTests=false
 	@echo "Copying generated models..."
-	@if [ -d "$(TEMP_DIR)/src/LudiscanApiClient.Runtime.ApiClient.Dto/Model" ]; then \
-		cp -rf $(TEMP_DIR)/src/LudiscanApiClient.Runtime.ApiClient.Dto/Model/*.cs $(DTO_OUTPUT_DIR)/; \
+	@FOUND_DIR=$$(find $(TEMP_DIR) -type d -name "Model" | head -1); \
+	if [ -n "$$FOUND_DIR" ] && [ -d "$$FOUND_DIR" ]; then \
+		echo "Found model directory: $$FOUND_DIR"; \
+		for f in $$FOUND_DIR/*.cs; do \
+			if [ -f "$$f" ]; then \
+				filename=$$(basename "$$f"); \
+				sed -i 's/using Newtonsoft.Json;/using Newtonsoft.Json;\nusing System.Collections.Generic;/g' "$$f" 2>/dev/null || true; \
+				cp -f "$$f" $(DTO_OUTPUT_DIR)/; \
+				echo "  Copied: $$filename"; \
+			fi \
+		done; \
 		echo "DTO classes generated successfully in $(DTO_OUTPUT_DIR)"; \
 	else \
 		echo "Warning: Generated model directory not found"; \
-		find $(TEMP_DIR) -name "*.cs" -path "*/Model/*" 2>/dev/null | head -20; \
+		echo "Searching for .cs files..."; \
+		find $(TEMP_DIR) -name "*.cs" 2>/dev/null | head -20; \
 	fi
 
 # Generate DTO classes from custom URL
@@ -57,9 +67,13 @@ help:
 	@echo "Ludiscan Unity API Client - Build Commands"
 	@echo ""
 	@echo "Usage:"
-	@echo "  make gen-dto              Generate DTO classes from local API server"
+	@echo "  make gen-dto              Generate DTO classes from local API server (localhost:3211)"
 	@echo "  make gen-dto-url URL=...  Generate DTO classes from custom Swagger URL"
 	@echo "  make clean                Clean temporary files"
 	@echo ""
+	@echo "Prerequisites:"
+	@echo "  npm install @openapitools/openapi-generator-cli -g"
+	@echo ""
 	@echo "Note: The API client uses UnityWebRequest (not RestSharp)."
-	@echo "      Only DTO classes are auto-generated from Swagger."
+	@echo "      Only DTO/Model classes are auto-generated from Swagger."
+	@echo "      Generated files go to: $(DTO_OUTPUT_DIR)"
