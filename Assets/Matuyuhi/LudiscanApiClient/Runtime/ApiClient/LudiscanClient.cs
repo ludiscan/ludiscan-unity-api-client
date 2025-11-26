@@ -113,6 +113,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 Debug.Log($"[LudiscanClient.Ping] Pinging {config.ApiBaseUrl}");
                 Debug.Log($"[LudiscanClient.Ping] XapiKey: {config.XapiKey}");
                 var task = await defaultApi.AppControllerGetPingWithHttpInfoAsync();
+                Debug.Log($"[LudiscanClient.Ping] Response received. StatusCode={task.StatusCode}, Data={task.Data}");
                 return task.Data == "pong";
             }
             catch (Exception e)
