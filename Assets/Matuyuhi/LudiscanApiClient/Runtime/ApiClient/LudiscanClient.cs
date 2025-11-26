@@ -64,6 +64,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
         {
             this.config = clientConfig;
             var userAgent = $"Matuyuhi.LudiscanApi.UnityClient/1.0.0 (Unity {Application.unityVersion}; {SystemInfo.operatingSystem})";
+            Debug.Log($"[LudiscanClient] Constructor called with clientConfig.ApiBaseUrl={clientConfig.ApiBaseUrl}");
             var configuration = new Configuration {
                 BasePath = clientConfig.ApiBaseUrl,
                 Timeout = TimeSpan.FromSeconds(clientConfig.TimeoutSeconds),
@@ -76,6 +77,10 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 },
                 UserAgent = userAgent,
             };
+
+            Debug.Log($"[LudiscanClient] Configuration.BasePath set to: {configuration.BasePath}");
+            Debug.Log($"[LudiscanClient] Configuration.Timeout: {configuration.Timeout.TotalSeconds} seconds");
+
             defaultApi = new AppApi(configuration);
             api = new GameClientAPIApi(configuration);
             api.ExceptionFactory = (name, response) =>
@@ -105,6 +110,8 @@ namespace LudiscanApiClient.Runtime.ApiClient
         {
             try
             {
+                Debug.Log($"[LudiscanClient.Ping] Pinging {config.ApiBaseUrl}");
+                Debug.Log($"[LudiscanClient.Ping] XapiKey: {config.XapiKey}");
                 var task = await defaultApi.AppControllerGetPingWithHttpInfoAsync();
                 return task.Data == "pong";
             }
@@ -124,6 +131,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
         {
             try
             {
+                Debug.Log($"[LudiscanClient.GetProjects] Making API request to {config.ApiBaseUrl} with XapiKey={config.XapiKey}");
                 var res = await api.GameControllerGetProjectsWithHttpInfoAsync(config.XapiKey, 100, 0);
                 return res.Data;
             }
