@@ -16,9 +16,9 @@ namespace LudiscanApiClient.Runtime.ApiClient
         public string XapiKey { get; set; }
 
         /// <summary>
-        /// タイムアウト秒数（デフォルト: 3秒）
+        /// タイムアウト秒数（デフォルト: 10秒）
         /// </summary>
-        public int TimeoutSeconds { get; set; } = 3;
+        public int TimeoutSeconds { get; set; } = 10;
 
         public LudiscanClientConfig(string apiBaseUrl, string _xapiKey)
         {

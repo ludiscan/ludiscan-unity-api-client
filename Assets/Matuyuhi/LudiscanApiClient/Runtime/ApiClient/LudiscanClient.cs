@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using LudiscanApiClient.Runtime.ApiClient.Model;
 using Matuyuhi.LudiscanApi.Client.Api;
@@ -43,13 +45,20 @@ namespace LudiscanApiClient.Runtime.ApiClient
         /// LudiscanClientを初期化します
         /// </summary>
         /// <param name="config">クライアント設定</param>
-        public static void Initialize(LudiscanClientConfig config)
+        /// <param name="skipCertificateValidation">HTTPS証明書検証をスキップする場合はtrue（開発環境用）</param>
+        public static void Initialize(LudiscanClientConfig config, bool skipCertificateValidation = false)
         {
             if (_instance != null)
             {
                 Debug.LogWarning("LudiscanClient is already initialized. Reinitializing...");
             }
             _instance = new ApiClient.LudiscanClient(config);
+            // Windows環境でのHTTPS証明書検証エラー対応（開発環境用）
+            if (skipCertificateValidation)
+            {
+                ServicePointManager.ServerCertificateValidationCallback =
+                    (sender, certificate, chain, sslPolicyErrors) => true;
+            }
         }
 
         /// <summary>
@@ -65,6 +74,11 @@ namespace LudiscanApiClient.Runtime.ApiClient
             this.config = clientConfig;
             var userAgent = $"Matuyuhi.LudiscanApi.UnityClient/1.0.0 (Unity {Application.unityVersion}; {SystemInfo.operatingSystem})";
             Debug.Log($"[LudiscanClient] Constructor called with clientConfig.ApiBaseUrl={clientConfig.ApiBaseUrl}");
+
+            // 接続設定
+            Debug.Log($"[LudiscanClient] Setting DefaultConnectionLimit to 10");
+            ServicePointManager.DefaultConnectionLimit = 10;
+
             var configuration = new Configuration {
                 BasePath = clientConfig.ApiBaseUrl,
                 Timeout = TimeSpan.FromSeconds(clientConfig.TimeoutSeconds),
@@ -80,6 +94,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
 
             Debug.Log($"[LudiscanClient] Configuration.BasePath set to: {configuration.BasePath}");
             Debug.Log($"[LudiscanClient] Configuration.Timeout: {configuration.Timeout.TotalSeconds} seconds");
+            Debug.Log($"[LudiscanClient] ServicePointManager.DefaultConnectionLimit: {ServicePointManager.DefaultConnectionLimit}");
 
             defaultApi = new AppApi(configuration);
             api = new GameClientAPIApi(configuration);
@@ -110,15 +125,91 @@ namespace LudiscanApiClient.Runtime.ApiClient
         {
             try
             {
-                Debug.Log($"[LudiscanClient.Ping] Pinging {config.ApiBaseUrl}");
+                Debug.Log($"[LudiscanClient.Ping] ===== PING START =====");
+                Debug.Log($"[LudiscanClient.Ping] Target URL: {config.ApiBaseUrl}");
                 Debug.Log($"[LudiscanClient.Ping] XapiKey: {config.XapiKey}");
+                Debug.Log($"[LudiscanClient.Ping] Timeout: {config.TimeoutSeconds}s");
+
                 var task = await defaultApi.AppControllerGetPingWithHttpInfoAsync();
-                Debug.Log($"[LudiscanClient.Ping] Response received. StatusCode={task.StatusCode}, Data={task.Data}");
-                return task.Data == "pong";
+
+                Debug.Log($"[LudiscanClient.Ping] API call completed");
+                Debug.Log($"[LudiscanClient.Ping] ===== Response Object Details =====");
+                Debug.Log($"[LudiscanClient.Ping] Response StatusCode: {task.StatusCode}");
+                Debug.Log($"[LudiscanClient.Ping] Response Data: {task.Data}");
+                Debug.Log($"[LudiscanClient.Ping] Response Data type: {task.Data?.GetType().FullName ?? "null"}");
+                Debug.Log($"[LudiscanClient.Ping] Response Data == null: {task.Data == null}");
+                Debug.Log($"[LudiscanClient.Ping] Response Data string.IsNullOrEmpty: {string.IsNullOrEmpty(task.Data)}");
+
+                // レスポンスオブジェクト自体の情報
+                Debug.Log($"[LudiscanClient.Ping] Response object type: {task.GetType().FullName}");
+                Debug.Log($"[LudiscanClient.Ping] Response object properties:");
+                foreach (var prop in task.GetType().GetProperties())
+                {
+                    var value = prop.GetValue(task);
+                    Debug.Log($"[LudiscanClient.Ping]   {prop.Name}: {value}");
+                }
+                Debug.Log($"[LudiscanClient.Ping] ===== End Response Details =====");
+
+                bool success = task.Data == "pong";
+                Debug.Log($"[LudiscanClient.Ping] Success check (Data == \"pong\"): {success}");
+                Debug.Log($"[LudiscanClient.Ping] ===== PING END =====");
+
+                return success;
+            }
+            catch (HttpRequestException e)
+            {
+                Debug.LogError($"[LudiscanClient.Ping] ===== HttpRequestException (Network issue) =====");
+                Debug.LogError($"[LudiscanClient.Ping] Message: {e.Message}");
+
+                Exception innerEx = e.InnerException;
+                int depth = 0;
+                while (innerEx != null && depth < 5)
+                {
+                    Debug.LogError($"[LudiscanClient.Ping] InnerException (depth {depth}): {innerEx.GetType().Name} - {innerEx.Message}");
+                    innerEx = innerEx.InnerException;
+                    depth++;
+                }
+
+                Debug.LogError($"[LudiscanClient.Ping] StackTrace: {e.StackTrace}");
+                Debug.LogException(e);
+                return false;
+            }
+            catch (ApiException e)
+            {
+                Debug.LogError($"[LudiscanClient.Ping] ===== ApiException =====");
+                Debug.LogError($"[LudiscanClient.Ping] ErrorCode: {e.ErrorCode}");
+                Debug.LogError($"[LudiscanClient.Ping] Message: {e.Message}");
+
+                Exception innerEx = e.InnerException;
+                int depth = 0;
+                while (innerEx != null && depth < 5)
+                {
+                    Debug.LogError($"[LudiscanClient.Ping] InnerException (depth {depth}): {innerEx.GetType().FullName} - {innerEx.Message}");
+                    innerEx = innerEx.InnerException;
+                    depth++;
+                }
+
+                Debug.LogError($"[LudiscanClient.Ping] StackTrace: {e.StackTrace}");
+                Debug.LogException(e);
+                return false;
             }
             catch (Exception e)
             {
-                Debug.LogError(e);
+                Debug.LogError($"[LudiscanClient.Ping] ===== Unexpected Exception =====");
+                Debug.LogError($"[LudiscanClient.Ping] Type: {e.GetType().FullName}");
+                Debug.LogError($"[LudiscanClient.Ping] Message: {e.Message}");
+
+                Exception innerEx = e.InnerException;
+                int depth = 0;
+                while (innerEx != null && depth < 5)
+                {
+                    Debug.LogError($"[LudiscanClient.Ping] InnerException (depth {depth}): {innerEx.GetType().FullName} - {innerEx.Message}");
+                    innerEx = innerEx.InnerException;
+                    depth++;
+                }
+
+                Debug.LogError($"[LudiscanClient.Ping] StackTrace: {e.StackTrace}");
+                Debug.LogException(e);
                 return false;
             }
         }
