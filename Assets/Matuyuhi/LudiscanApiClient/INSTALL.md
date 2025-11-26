@@ -74,11 +74,11 @@ After installation, verify the package is correctly installed:
    - Navigate to `Assets > Matuyuhi > LudiscanApiClient > Runtime > Scripts > ApiClient`
    - You should see `ApiClient.asmdef`
 
-3. **Verify DLLs**
-   - Check that `Runtime/Plugins/` contains:
-     - `Matuyuhi.LudiscanApi.Client.dll`
-     - `RestSharp/` folder with DLLs
-     - `Polly/` folder with DLLs
+3. **Verify Source Files**
+   - Check that `Runtime/ApiClient/` contains:
+     - `LudiscanClient.cs`
+     - `Http/UnityHttpClient.cs`
+     - `Dto/` folder with DTO classes
 
 4. **Check Console**
    - Open the Console window (`Window > General > Console`)
@@ -100,11 +100,11 @@ After installation, verify the package is correctly installed:
 - Ensure `com.unity.nuget.newtonsoft-json` is in your dependencies
 - Run `Assets > Reimport All` to refresh
 
-### Issue: DLL import errors
+### Issue: Script compilation errors
 
 **Solution:**
-1. Check that all `.dll` files are in `Runtime/Plugins/`
-2. Verify `.meta` files exist for each DLL
+1. Ensure all `.cs` files are present in `Runtime/ApiClient/`
+2. Check that `Newtonsoft.Json` package is installed
 3. Run `Assets > Reimport All`
 4. Restart Unity
 
@@ -122,13 +122,15 @@ Once installed, you need to configure the API client:
 ### 1. Set API Endpoint
 
 ```csharp
-using Matuyuhi.LudiscanApi.Client;
+using LudiscanApiClient.Runtime.ApiClient;
 
 // In your initialization code
-var config = new LudiscanClientConfig
+var config = new LudiscanClientConfig(
+    apiBaseUrl: "http://your-ludiscan-server:3000",
+    apiKey: "your-api-key"
+)
 {
-    ApiBaseUrl = "http://your-ludiscan-server:3000",
-    ProjectId = "your-project-id"
+    TimeoutSeconds = 10
 };
 
 LudiscanClient.Initialize(config);

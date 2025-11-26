@@ -1,5 +1,4 @@
-using Matuyuhi.LudiscanApi.Client.Client;
-using Matuyuhi.LudiscanApi.Client.Model;
+using LudiscanApiClient.Runtime.ApiClient.Dto;
 
 namespace LudiscanApiClient.Runtime.ApiClient
 {
@@ -7,29 +6,31 @@ namespace LudiscanApiClient.Runtime.ApiClient
     /// Ludiscan APIからのエラーレスポンスを表す例外クラス
     /// APIエラー時にスローされ、エラーコードとメッセージを含みます
     /// </summary>
-    public class ErrorResponseException: ApiException
+    public class ErrorResponseException : ApiException
     {
-        private DefaultErrorResponse e;
+        private readonly DefaultErrorResponse _errorResponse;
 
         /// <summary>
         /// エラー識別子
         /// </summary>
-        public string Error => e.Error;
+        public string Error => _errorResponse.Error;
 
         /// <summary>
         /// ErrorResponseExceptionを初期化します
         /// </summary>
-        /// <param name="e">エラーレスポンス</param>
-        public ErrorResponseException(DefaultErrorResponse e): base((int)e.Code, e.Message)
+        /// <param name="errorResponse">エラーレスポンス</param>
+        public ErrorResponseException(DefaultErrorResponse errorResponse)
+            : base(errorResponse.Code, errorResponse.Message)
         {
-
+            _errorResponse = errorResponse;
         }
 
         /// <summary>
         /// エラー情報を文字列として返します
         /// </summary>
         /// <returns>エラーコードとメッセージを含む文字列</returns>
-        public override string ToString() {
+        public override string ToString()
+        {
             return $"Code: {ErrorCode}, Message: {Message}";
         }
     }

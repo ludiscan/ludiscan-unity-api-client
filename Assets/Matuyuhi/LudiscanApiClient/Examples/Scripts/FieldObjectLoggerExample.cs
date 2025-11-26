@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using LudiscanApiClient.Runtime.ApiClient;
 using LudiscanApiClient.Runtime.ApiClient.Model;
-using Matuyuhi.LudiscanApi.Client.Model;
 using UnityEngine;
 
 namespace LudiscanApiClient.Examples

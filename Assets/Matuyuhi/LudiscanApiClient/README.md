@@ -720,9 +720,10 @@ var config = new LudiscanClientConfig(
 
 このパッケージは以下のライブラリに依存しています：
 
-- **RestSharp** (v107.3.0) - HTTP client library（パッケージに含まれています）
-- **Polly** - Resilience and transient-fault-handling library（パッケージに含まれています）
+- **UnityWebRequest** - Unity標準のHTTPクライアント（組み込み済み）
 - **Newtonsoft.Json** - JSON serialization（`com.unity.nuget.newtonsoft-json` 経由）
+
+> **Note**: v2.0.0以降、RestSharpからUnityWebRequestに移行しました。これにより、証明書処理がプラットフォームごとに適切に処理され、外部DLL依存が削減されました。
 
 ## Requirements
 
@@ -842,16 +843,21 @@ var config = new LudiscanClientConfig(apiBaseUrl, apiKey)
 ```
 Assets/Matuyuhi/LudiscanApiClient/
 ├── Runtime/
-│   ├── ApiClient/
-│   │   ├── LudiscanClient.cs
-│   │   ├── PositionLogger.cs
-│   │   ├── GeneralEventLogger.cs
-│   │   ├── FieldObjectLogger.cs
-│   │   └── Model/
-│   └── Plugins/
-│       ├── Matuyuhi.LudiscanApi.Client.dll
-│       ├── RestSharp/
-│       └── Polly/
+│   └── ApiClient/
+│       ├── LudiscanClient.cs          # メインAPIクライアント
+│       ├── PositionLogger.cs          # 位置ログ管理
+│       ├── GeneralEventLogger.cs      # 汎用イベントログ管理
+│       ├── FieldObjectLogger.cs       # フィールドオブジェクトログ管理
+│       ├── ApiException.cs            # API例外クラス
+│       ├── ErrorResponseException.cs  # エラーレスポンス例外
+│       ├── Http/                       # HTTPクライアント（UnityWebRequest）
+│       │   ├── UnityHttpClient.cs
+│       │   └── BypassCertificateHandler.cs
+│       ├── Dto/                        # データ転送オブジェクト
+│       │   ├── ProjectResponseDto.cs
+│       │   ├── PlaySessionResponseDto.cs
+│       │   └── ...
+│       └── Model/                      # ドメインモデル
 ├── Examples/
 │   └── Scripts/
 ├── package.json
@@ -859,21 +865,21 @@ Assets/Matuyuhi/LudiscanApiClient/
 └── INSTALL.md
 ```
 
-## API Client Generation
+## DTO Generation (Optional)
 
-The OpenAPI API client is auto-generated from the Ludiscan backend Swagger specification.
+DTOクラスはSwagger仕様から自動生成できます。
 
-### Regenerating the Client
+### DTOの再生成
 
-If the backend API changes:
+バックエンドAPIが変更された場合：
 
-1. Ensure your local Ludiscan API is running on port 3211
-2. In the package directory, run:
+1. ローカルのLudiscan APIをポート3211で起動
+2. パッケージディレクトリで以下を実行:
    ```bash
-   make gen
+   make gen-dto
    ```
 
-For more details, see the repository root documentation.
+詳細はMakefileのhelpを参照してください: `make help`
 
 ## Support
 
