@@ -28,7 +28,7 @@ gen-dto:
 	@mkdir -p $(DTO_OUTPUT_DIR)
 	openapi-generator-cli generate \
 		-i $(SWAGGER_URL) \
-		-g csharp-netcore \
+		-g csharp \
 		-o $(TEMP_DIR) \
 		-c api-generate-config.json \
 		--global-property models,modelDocs=false,modelTests=false
