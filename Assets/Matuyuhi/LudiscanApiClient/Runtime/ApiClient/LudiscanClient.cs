@@ -445,9 +445,64 @@ namespace LudiscanApiClient.Runtime.ApiClient
         {
             try
             {
+                return await PutData(projectId, sessionId, new { score = score });
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                throw;
+            }
+        }
+
+        private async Task<Session> PutObject(int projectId, int sessionId, string key, int value)
+        {
+            try
+            {
+                var metadata = new Dictionary<string, object> { { key, value } };
+                return await PutData(projectId, sessionId, metadata);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                throw;
+            }
+        }
+
+        private async Task<Session> PutObject(int projectId, int sessionId, string key, double value)
+        {
+            try
+            {
+                var metadata = new Dictionary<string, object> { { key, value } };
+                return await PutData(projectId, sessionId, metadata);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                throw;
+            }
+        }
+
+        private async Task<Session> PutObject(int projectId, int sessionId, string key, string value)
+        {
+            try
+            {
+                var metadata = new Dictionary<string, object> { { key, value } };
+                return await PutData(projectId, sessionId, metadata);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                throw;
+            }
+        }
+
+        private async Task<Session> PutData(int projectId, int sessionId, object metadata)
+        {
+            try
+            {
                 var requestDto = new UpdatePlaySessionDto
                 {
-                    MetaData = new { score = score }
+                    MetaData = metadata
                 };
 
                 var response = await _httpClient.PutJsonAsync<PlaySessionResponseDto>(
