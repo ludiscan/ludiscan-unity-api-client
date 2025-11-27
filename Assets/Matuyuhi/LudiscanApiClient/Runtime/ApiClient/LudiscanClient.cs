@@ -64,9 +64,6 @@ namespace LudiscanApiClient.Runtime.ApiClient
         private LudiscanClient(LudiscanClientConfig config, bool skipCertificateValidation)
         {
             _config = config;
-            Debug.Log($"[LudiscanClient] Constructor called with ApiBaseUrl={config.ApiBaseUrl}");
-            Debug.Log($"[LudiscanClient] Timeout: {config.TimeoutSeconds} seconds");
-            Debug.Log($"[LudiscanClient] SkipCertificateValidation: {skipCertificateValidation}");
 
             _httpClient = new UnityHttpClient(
                 config.ApiBaseUrl,
@@ -84,30 +81,15 @@ namespace LudiscanApiClient.Runtime.ApiClient
         {
             try
             {
-                Debug.Log($"[LudiscanClient.Ping] ===== PING START =====");
-                Debug.Log($"[LudiscanClient.Ping] Target URL: {_config.ApiBaseUrl}");
-                Debug.Log($"[LudiscanClient.Ping] XapiKey: {_config.XapiKey}");
-                Debug.Log($"[LudiscanClient.Ping] Timeout: {_config.TimeoutSeconds}s");
 
                 var response = await _httpClient.GetStringAsync("/ping");
 
-                Debug.Log($"[LudiscanClient.Ping] API call completed");
-                Debug.Log($"[LudiscanClient.Ping] Response StatusCode: {response.StatusCode}");
-                Debug.Log($"[LudiscanClient.Ping] Response Data: {response.Data}");
-                Debug.Log($"[LudiscanClient.Ping] Response IsSuccess: {response.IsSuccess}");
-
                 bool success = response.IsSuccess && response.Data == "pong";
-                Debug.Log($"[LudiscanClient.Ping] Success check: {success}");
-                Debug.Log($"[LudiscanClient.Ping] ===== PING END =====");
 
                 return success;
             }
             catch (Exception e)
             {
-                Debug.LogError($"[LudiscanClient.Ping] ===== Exception =====");
-                Debug.LogError($"[LudiscanClient.Ping] Type: {e.GetType().FullName}");
-                Debug.LogError($"[LudiscanClient.Ping] Message: {e.Message}");
-                Debug.LogError($"[LudiscanClient.Ping] StackTrace: {e.StackTrace}");
                 Debug.LogException(e);
                 return false;
             }
@@ -122,7 +104,6 @@ namespace LudiscanApiClient.Runtime.ApiClient
         {
             try
             {
-                Debug.Log($"[LudiscanClient.GetProjects] Making API request to {_config.ApiBaseUrl}");
 
                 var queryParams = new Dictionary<string, string>
                 {
