@@ -454,7 +454,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
-        private async Task<Session> PutObject(int projectId, int sessionId, string key, int value)
+        public async Task<Session> PutObject(int projectId, int sessionId, string key, int value)
         {
             try
             {
@@ -468,7 +468,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
-        private async Task<Session> PutObject(int projectId, int sessionId, string key, double value)
+        public async Task<Session> PutObject(int projectId, int sessionId, string key, double value)
         {
             try
             {
@@ -482,7 +482,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
-        private async Task<Session> PutObject(int projectId, int sessionId, string key, string value)
+        public async Task<Session> PutObject(int projectId, int sessionId, string key, string value)
         {
             try
             {
