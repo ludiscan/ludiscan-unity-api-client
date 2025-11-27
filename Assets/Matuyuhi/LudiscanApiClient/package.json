@@ -1,6 +1,6 @@
 {
   "name": "com.matuyuhi.ludiscan-api-client",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "displayName": "Ludiscan API Client",
   "description": "C# API client for Ludiscan player tracking service. Provides utilities for position logging, session management, event screenshots, and data export.",
   "unity": "2022.2",
