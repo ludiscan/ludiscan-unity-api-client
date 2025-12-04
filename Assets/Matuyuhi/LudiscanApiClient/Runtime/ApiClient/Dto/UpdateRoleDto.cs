@@ -24,64 +24,43 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// DefaultErrorResponse
+    /// UpdateRoleDto
     /// </summary>
-    [DataContract(Name = "DefaultErrorResponse")]
-    public partial class DefaultErrorResponse
+    [DataContract(Name = "UpdateRoleDto")]
+    public partial class UpdateRoleDto
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="DefaultErrorResponse" /> class.
+        /// Initializes a new instance of the <see cref="UpdateRoleDto" /> class.
         /// </summary>
         [JsonConstructorAttribute]
-        protected DefaultErrorResponse()
+        protected UpdateRoleDto()
         {
             this.AdditionalProperties = new Dictionary<string, object>();
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="DefaultErrorResponse" /> class.
+        /// Initializes a new instance of the <see cref="UpdateRoleDto" /> class.
         /// </summary>
-        /// <param name="code">code (required).</param>
-        /// <param name="message">message (required).</param>
-        /// <param name="error">error.</param>
-        public DefaultErrorResponse(decimal code = default(decimal), string message = default(string), string error = default(string))
+        /// <param name="role">ユーザーの新しいロール (例: user, admin) (required).</param>
+        public UpdateRoleDto(string role = default(string))
         {
-            this.Code = code;
-            // to ensure "message" is required (not null)
-            if (message == null)
+            // to ensure "role" is required (not null)
+            if (role == null)
             {
-                throw new ArgumentNullException("message is a required property for DefaultErrorResponse and cannot be null");
+                throw new ArgumentNullException("role is a required property for UpdateRoleDto and cannot be null");
             }
-            this.Message = message;
-            this.Error = error;
+            this.Role = role;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// Gets or Sets Code
+        /// ユーザーの新しいロール (例: user, admin)
         /// </summary>
+        /// <value>ユーザーの新しいロール (例: user, admin)</value>
         /*
-        <example>400</example>
+        <example>admin</example>
         */
-        [DataMember(Name = "code", IsRequired = true, EmitDefaultValue = true)]
-        public decimal Code { get; set; }
-
-        /// <summary>
-        /// Gets or Sets Message
-        /// </summary>
-        /*
-        <example>Bad Request</example>
-        */
-        [DataMember(Name = "message", IsRequired = true, EmitDefaultValue = true)]
-        public string Message { get; set; }
-
-        /// <summary>
-        /// Gets or Sets Error
-        /// </summary>
-        /*
-        <example>Invalid input data</example>
-        */
-        [DataMember(Name = "error", EmitDefaultValue = true)]
-        public string Error { get; set; }
+        [DataMember(Name = "role", IsRequired = true, EmitDefaultValue = true)]
+        public string Role { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -96,10 +75,8 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class DefaultErrorResponse {\n");
-            sb.Append("  Code: ").Append(Code).Append("\n");
-            sb.Append("  Message: ").Append(Message).Append("\n");
-            sb.Append("  Error: ").Append(Error).Append("\n");
+            sb.Append("class UpdateRoleDto {\n");
+            sb.Append("  Role: ").Append(Role).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
