@@ -24,43 +24,42 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// UpdateRoleDto
+    /// ClusteredRouteDtoTrajectoryPointsInner
     /// </summary>
-    [DataContract(Name = "UpdateRoleDto")]
-    public partial class UpdateRoleDto
+    [DataContract(Name = "ClusteredRouteDto_trajectory_points_inner")]
+    public partial class ClusteredRouteDtoTrajectoryPointsInner
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="UpdateRoleDto" /> class.
+        /// Initializes a new instance of the <see cref="ClusteredRouteDtoTrajectoryPointsInner" /> class.
         /// </summary>
-        [JsonConstructorAttribute]
-        protected UpdateRoleDto()
+        /// <param name="x">x.</param>
+        /// <param name="y">y.</param>
+        /// <param name="z">z.</param>
+        public ClusteredRouteDtoTrajectoryPointsInner(decimal x = default(decimal), decimal y = default(decimal), decimal z = default(decimal))
         {
-            this.AdditionalProperties = new Dictionary<string, object>();
-        }
-        /// <summary>
-        /// Initializes a new instance of the <see cref="UpdateRoleDto" /> class.
-        /// </summary>
-        /// <param name="role">ユーザーの新しいロール (例: user, admin) (required).</param>
-        public UpdateRoleDto(string role = default(string))
-        {
-            // to ensure "role" is required (not null)
-            if (role == null)
-            {
-                throw new ArgumentNullException("role is a required property for UpdateRoleDto and cannot be null");
-            }
-            this.Role = role;
+            this.X = x;
+            this.Y = y;
+            this.Z = z;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// ユーザーの新しいロール (例: user, admin)
+        /// Gets or Sets X
         /// </summary>
-        /// <value>ユーザーの新しいロール (例: user, admin)</value>
-        /*
-        <example>admin</example>
-        */
-        [DataMember(Name = "role", IsRequired = true, EmitDefaultValue = true)]
-        public string Role { get; set; }
+        [DataMember(Name = "x", EmitDefaultValue = false)]
+        public decimal X { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Y
+        /// </summary>
+        [DataMember(Name = "y", EmitDefaultValue = false)]
+        public decimal Y { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Z
+        /// </summary>
+        [DataMember(Name = "z", EmitDefaultValue = false)]
+        public decimal Z { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -75,8 +74,10 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class UpdateRoleDto {\n");
-            sb.Append("  Role: ").Append(Role).Append("\n");
+            sb.Append("class ClusteredRouteDtoTrajectoryPointsInner {\n");
+            sb.Append("  X: ").Append(X).Append("\n");
+            sb.Append("  Y: ").Append(Y).Append("\n");
+            sb.Append("  Z: ").Append(Z).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
