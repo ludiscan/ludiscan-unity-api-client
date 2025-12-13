@@ -24,39 +24,27 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// HealthControllerCheck200ResponseInfoValue
+    /// GoogleAuthWithReturnQueryDto
     /// </summary>
-    [DataContract(Name = "HealthController_check_200_response_info_value")]
-    public partial class HealthControllerCheck200ResponseInfoValue
+    [DataContract(Name = "GoogleAuthWithReturnQueryDto")]
+    public partial class GoogleAuthWithReturnQueryDto
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="HealthControllerCheck200ResponseInfoValue" /> class.
+        /// Initializes a new instance of the <see cref="GoogleAuthWithReturnQueryDto" /> class.
         /// </summary>
-        [JsonConstructorAttribute]
-        protected HealthControllerCheck200ResponseInfoValue()
+        /// <param name="returnTo">認証完了後に戻る先（フロントのURL）.</param>
+        public GoogleAuthWithReturnQueryDto(string returnTo = default(string))
         {
-            this.AdditionalProperties = new Dictionary<string, object>();
-        }
-        /// <summary>
-        /// Initializes a new instance of the <see cref="HealthControllerCheck200ResponseInfoValue" /> class.
-        /// </summary>
-        /// <param name="status">status (required).</param>
-        public HealthControllerCheck200ResponseInfoValue(string status = default(string))
-        {
-            // to ensure "status" is required (not null)
-            if (status == null)
-            {
-                throw new ArgumentNullException("status is a required property for HealthControllerCheck200ResponseInfoValue and cannot be null");
-            }
-            this.Status = status;
+            this.ReturnTo = returnTo;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// Gets or Sets Status
+        /// 認証完了後に戻る先（フロントのURL）
         /// </summary>
-        [DataMember(Name = "status", IsRequired = true, EmitDefaultValue = true)]
-        public string Status { get; set; }
+        /// <value>認証完了後に戻る先（フロントのURL）</value>
+        [DataMember(Name = "returnTo", EmitDefaultValue = false)]
+        public string ReturnTo { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -71,8 +59,8 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class HealthControllerCheck200ResponseInfoValue {\n");
-            sb.Append("  Status: ").Append(Status).Append("\n");
+            sb.Append("class GoogleAuthWithReturnQueryDto {\n");
+            sb.Append("  ReturnTo: ").Append(ReturnTo).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
