@@ -144,8 +144,8 @@ namespace LudiscanApiClient.Runtime.ApiClient
             {
                 var requestDto = new CreatePlaySessionDto(name)
                 {
-                    AppVersion = Application.version,
-                    DeviceId = SystemInfo.deviceUniqueIdentifier,
+                    AppVersion = GetAppVersion(),
+                    DeviceId = GetDeviceId(),
                     Platform = "Unity-" + Application.platform
                 };
 
@@ -182,6 +182,75 @@ namespace LudiscanApiClient.Runtime.ApiClient
         public async Task<PlaySessionResponseDto> CreateSession(IProject project, string name)
         {
             return await CreateSession(project.Id, name);
+        }
+
+        /// <summary>
+        /// 新しいプレイセッションを作成します（カスタムパラメータ指定可能）
+        /// </summary>
+        /// <param name="projectId">プロジェクトID</param>
+        /// <param name="name">セッション名</param>
+        /// <param name="appVersion">アプリバージョン（nullの場合は自動取得）</param>
+        /// <param name="deviceId">デバイスID（nullの場合は自動取得）</param>
+        /// <param name="platform">プラットフォーム（nullの場合は自動取得）</param>
+        /// <returns>作成されたセッション情報</returns>
+        /// <exception cref="ApiException">API呼び出しが失敗した場合</exception>
+        public async Task<PlaySessionResponseDto> CreateSession(
+            int projectId,
+            string name,
+            string appVersion,
+            string deviceId,
+            string platform = null)
+        {
+            try
+            {
+                var requestDto = new CreatePlaySessionDto(name)
+                {
+                    AppVersion = appVersion ?? GetAppVersion(),
+                    DeviceId = deviceId ?? GetDeviceId(),
+                    Platform = platform ?? ("Unity-" + Application.platform)
+                };
+
+                var response = await _httpClient.PostJsonAsync<PlaySessionResponseDto>(
+                    $"/api/v0/game/projects/{projectId}/sessions",
+                    requestDto
+                );
+
+                if (!response.IsSuccess)
+                {
+                    throw CreateApiException(response.StatusCode, response.ErrorMessage, response.RawContent);
+                }
+
+                return response.Data;
+            }
+            catch (ApiException)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 新しいプレイセッションを作成します（カスタムパラメータ指定可能）
+        /// </summary>
+        /// <param name="project">セッションを作成するプロジェクト</param>
+        /// <param name="name">セッション名</param>
+        /// <param name="appVersion">アプリバージョン（nullの場合は自動取得）</param>
+        /// <param name="deviceId">デバイスID（nullの場合は自動取得）</param>
+        /// <param name="platform">プラットフォーム（nullの場合は自動取得）</param>
+        /// <returns>作成されたセッション情報</returns>
+        /// <exception cref="ApiException">API呼び出しが失敗した場合</exception>
+        public async Task<PlaySessionResponseDto> CreateSession(
+            IProject project,
+            string name,
+            string appVersion,
+            string deviceId,
+            string platform = null)
+        {
+            return await CreateSession(project.Id, name, appVersion, deviceId, platform);
         }
 
         /// <summary>
@@ -647,6 +716,54 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 result.Append(char.ToLower(c));
             }
             return result.ToString();
+        }
+
+        /// <summary>
+        /// アプリケーションバージョンを取得します
+        /// Player Settingsで未設定の場合はプロダクト名とUnityバージョンを組み合わせた値を返します
+        /// </summary>
+        private static string GetAppVersion()
+        {
+            var version = Application.version;
+            if (!string.IsNullOrEmpty(version) && version != "0.0")
+            {
+                return version;
+            }
+            // Unity Editorや未設定時はプロダクト名とUnityバージョンで代替
+            var productName = string.IsNullOrEmpty(Application.productName) ? "UnknownApp" : Application.productName;
+            return $"{productName}-{Application.unityVersion}";
+        }
+
+        /// <summary>
+        /// デバイスIDを取得します
+        /// SystemInfo.deviceUniqueIdentifierが取得できない場合はデバイス情報からハッシュを生成します
+        /// </summary>
+        private static string GetDeviceId()
+        {
+            var deviceId = SystemInfo.deviceUniqueIdentifier;
+            if (!string.IsNullOrEmpty(deviceId) && deviceId != SystemInfo.unsupportedIdentifier)
+            {
+                return deviceId;
+            }
+            // デバイスIDが取得できない場合は代替IDを生成
+            var fallbackId = $"{SystemInfo.deviceModel}_{SystemInfo.deviceName}_{SystemInfo.deviceType}_{SystemInfo.graphicsDeviceID}";
+            return ComputeSimpleHash(fallbackId);
+        }
+
+        /// <summary>
+        /// 文字列から簡易ハッシュを生成します
+        /// </summary>
+        private static string ComputeSimpleHash(string input)
+        {
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var bytes = Encoding.UTF8.GetBytes(input);
+            var hash = sha256.ComputeHash(bytes);
+            var sb = new StringBuilder();
+            foreach (var b in hash)
+            {
+                sb.Append(b.ToString("x2"));
+            }
+            return sb.ToString().Substring(0, 32);
         }
     }
 }
