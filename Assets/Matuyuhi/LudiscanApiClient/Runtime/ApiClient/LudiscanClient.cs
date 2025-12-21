@@ -565,6 +565,19 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
+        public async Task<Session> PutObjects(int projectId, int sessionId, Dictionary<string, object> data)
+        {
+            try
+            {
+                return await PutData(projectId, sessionId, data);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                throw;
+            }
+        }
+
         private async Task<Session> PutData(int projectId, int sessionId, object metadata)
         {
             try
