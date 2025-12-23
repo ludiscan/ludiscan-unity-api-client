@@ -58,54 +58,45 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 var metadata = entry.Metadata;
                 var position = entry.Position;
 
-                // positionの座標変換（Unity X,Y,Z → 送信 X=Z*100, Y=X*100, Z=Y*100）
-                Dictionary<string, object> transformedPosition = null;
+                // 座標は GeneralEventLogger.AddLog で既に変換済み（API座標系・cm単位）
+                // そのまま使用する
+                Dictionary<string, object> positionDict = null;
                 if (position != null && position is Dictionary<string, object> posDict)
                 {
-                    transformedPosition = new Dictionary<string, object>();
-
-                    var x = posDict.ContainsKey("x") ? Convert.ToSingle(posDict["x"]) : 0f;
-                    var y = posDict.ContainsKey("y") ? Convert.ToSingle(posDict["y"]) : 0f;
-                    var z = posDict.ContainsKey("z") ? Convert.ToSingle(posDict["z"]) : 0f;
-
-                    // 座標変換とスケール適用
-                    transformedPosition["x"] = z * 100f;
-                    transformedPosition["y"] = x * 100f;
-                    transformedPosition["z"] = y * 100f;
+                    positionDict = posDict;
+                }
+                else if (position != null && position is Dictionary<string, float> posFloatDict)
+                {
+                    positionDict = new Dictionary<string, object>();
+                    foreach (var kvp in posFloatDict)
+                    {
+                        positionDict[kvp.Key] = kvp.Value;
+                    }
                 }
                 else if (position != null)
                 {
-                    // positionがオブジェクトの場合、JSONシリアライズして変換
-                    var posJson = JsonConvert.DeserializeObject<Dictionary<string, object>>(
+                    // positionがオブジェクトの場合、JSONシリアライズして取得
+                    positionDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(
                         JsonConvert.SerializeObject(position)) ?? new Dictionary<string, object>();
-
-                    transformedPosition = new Dictionary<string, object>();
-                    var x = posJson.ContainsKey("x") ? Convert.ToSingle(posJson["x"]) : 0f;
-                    var y = posJson.ContainsKey("y") ? Convert.ToSingle(posJson["y"]) : 0f;
-                    var z = posJson.ContainsKey("z") ? Convert.ToSingle(posJson["z"]) : 0f;
-
-                    transformedPosition["x"] = z * 100f;
-                    transformedPosition["y"] = x * 100f;
-                    transformedPosition["z"] = y * 100f;
                 }
 
                 // metadataとpositionを結合
                 object combinedData = null;
-                if (metadata != null && transformedPosition != null)
+                if (metadata != null && positionDict != null)
                 {
                     // Both metadata and position exist - merge them
                     var metaDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(
                         JsonConvert.SerializeObject(metadata)) ?? new Dictionary<string, object>();
 
-                    foreach (var kvp in transformedPosition)
+                    foreach (var kvp in positionDict)
                     {
                         metaDict[kvp.Key] = kvp.Value;
                     }
                     combinedData = metaDict;
                 }
-                else if (transformedPosition != null)
+                else if (positionDict != null)
                 {
-                    combinedData = transformedPosition;
+                    combinedData = positionDict;
                 }
                 else if (metadata != null)
                 {
@@ -191,46 +182,43 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 var metadata = entry.Metadata;
                 var position = entry.Position;
 
-                // positionの座標変換
-                Dictionary<string, object> transformedPosition = null;
+                // 座標は GeneralEventLogger.AddLog で既に変換済み（API座標系・cm単位）
+                // そのまま使用する
+                Dictionary<string, object> positionDict = null;
                 if (position != null && position is Dictionary<string, object> posDict)
                 {
-                    transformedPosition = new Dictionary<string, object>();
-                    var x = posDict.ContainsKey("x") ? Convert.ToSingle(posDict["x"]) : 0f;
-                    var y = posDict.ContainsKey("y") ? Convert.ToSingle(posDict["y"]) : 0f;
-                    var z = posDict.ContainsKey("z") ? Convert.ToSingle(posDict["z"]) : 0f;
-                    transformedPosition["x"] = z * 100f;
-                    transformedPosition["y"] = x * 100f;
-                    transformedPosition["z"] = y * 100f;
+                    positionDict = posDict;
+                }
+                else if (position != null && position is Dictionary<string, float> posFloatDict)
+                {
+                    positionDict = new Dictionary<string, object>();
+                    foreach (var kvp in posFloatDict)
+                    {
+                        positionDict[kvp.Key] = kvp.Value;
+                    }
                 }
                 else if (position != null)
                 {
-                    var posJson = JsonConvert.DeserializeObject<Dictionary<string, object>>(
+                    // positionがオブジェクトの場合、JSONシリアライズして取得
+                    positionDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(
                         JsonConvert.SerializeObject(position)) ?? new Dictionary<string, object>();
-                    transformedPosition = new Dictionary<string, object>();
-                    var x = posJson.ContainsKey("x") ? Convert.ToSingle(posJson["x"]) : 0f;
-                    var y = posJson.ContainsKey("y") ? Convert.ToSingle(posJson["y"]) : 0f;
-                    var z = posJson.ContainsKey("z") ? Convert.ToSingle(posJson["z"]) : 0f;
-                    transformedPosition["x"] = z * 100f;
-                    transformedPosition["y"] = x * 100f;
-                    transformedPosition["z"] = y * 100f;
                 }
 
                 // metadataとpositionを結合
                 object combinedData = null;
-                if (metadata != null && transformedPosition != null)
+                if (metadata != null && positionDict != null)
                 {
                     var metaDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(
                         JsonConvert.SerializeObject(metadata)) ?? new Dictionary<string, object>();
-                    foreach (var kvp in transformedPosition)
+                    foreach (var kvp in positionDict)
                     {
                         metaDict[kvp.Key] = kvp.Value;
                     }
                     combinedData = metaDict;
                 }
-                else if (transformedPosition != null)
+                else if (positionDict != null)
                 {
-                    combinedData = transformedPosition;
+                    combinedData = positionDict;
                 }
                 else if (metadata != null)
                 {

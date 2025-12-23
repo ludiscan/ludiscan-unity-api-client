@@ -121,10 +121,11 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 };
                 bw.Write(eventTypeByte);                 // event_type: 1 byte
 
-                // 既存の座標変換ロジックを踏襲（Unity X,Y,Z → 送信 X=Z, Y=X, Z=Y, 1cmスケール）
-                bw.Write(entry.Z * 100f);               // x: 4 bytes (float)
-                bw.Write(entry.X * 100f);               // y: 4 bytes (float)
-                bw.Write(entry.Y * 100f);               // z: 4 bytes (float)
+                // 座標は FieldObjectLogger.AddLog で既に変換済み（API座標系・cm単位）
+                // 軸変換も済んでいる: entry.X = unity.Z*100, entry.Y = unity.X*100, entry.Z = unity.Y*100
+                bw.Write(entry.X);                       // x: 4 bytes (float)
+                bw.Write(entry.Y);                       // y: 4 bytes (float)
+                bw.Write(entry.Z);                       // z: 4 bytes (float)
                 bw.Write(entry.OffsetTimeStamp);        // offset_timestamp: 8 bytes
 
                 // status
