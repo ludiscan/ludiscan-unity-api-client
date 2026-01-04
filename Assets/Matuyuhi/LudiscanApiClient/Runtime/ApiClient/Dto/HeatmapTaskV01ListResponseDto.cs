@@ -24,34 +24,34 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// SearchPlaySessionResponseDto
+    /// HeatmapTaskV01ListResponseDto
     /// </summary>
-    [DataContract(Name = "SearchPlaySessionResponseDto")]
-    public partial class SearchPlaySessionResponseDto
+    [DataContract(Name = "HeatmapTaskV01ListResponseDto")]
+    public partial class HeatmapTaskV01ListResponseDto
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="SearchPlaySessionResponseDto" /> class.
+        /// Initializes a new instance of the <see cref="HeatmapTaskV01ListResponseDto" /> class.
         /// </summary>
         [JsonConstructorAttribute]
-        protected SearchPlaySessionResponseDto()
+        protected HeatmapTaskV01ListResponseDto()
         {
             this.AdditionalProperties = new Dictionary<string, object>();
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="SearchPlaySessionResponseDto" /> class.
+        /// Initializes a new instance of the <see cref="HeatmapTaskV01ListResponseDto" /> class.
         /// </summary>
-        /// <param name="data">Array of play sessions matching the search criteria (required).</param>
-        /// <param name="total">Total number of sessions matching the criteria (required).</param>
-        /// <param name="limit">Number of results returned (required).</param>
-        /// <param name="offset">Number of results skipped (required).</param>
-        public SearchPlaySessionResponseDto(List<PlaySessionResponseDto> data = default(List<PlaySessionResponseDto>), decimal total = default(decimal), decimal limit = default(decimal), decimal offset = default(decimal))
+        /// <param name="tasks">List of heatmap tasks (required).</param>
+        /// <param name="total">Total number of tasks (required).</param>
+        /// <param name="limit">Number of tasks returned (required).</param>
+        /// <param name="offset">Offset for pagination (required).</param>
+        public HeatmapTaskV01ListResponseDto(List<HeatmapTaskV01ListItemDto> tasks = default(List<HeatmapTaskV01ListItemDto>), decimal total = default(decimal), decimal limit = default(decimal), decimal offset = default(decimal))
         {
-            // to ensure "data" is required (not null)
-            if (data == null)
+            // to ensure "tasks" is required (not null)
+            if (tasks == null)
             {
-                throw new ArgumentNullException("data is a required property for SearchPlaySessionResponseDto and cannot be null");
+                throw new ArgumentNullException("tasks is a required property for HeatmapTaskV01ListResponseDto and cannot be null");
             }
-            this.Data = data;
+            this.Tasks = tasks;
             this.Total = total;
             this.Limit = limit;
             this.Offset = offset;
@@ -59,16 +59,16 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         }
 
         /// <summary>
-        /// Array of play sessions matching the search criteria
+        /// List of heatmap tasks
         /// </summary>
-        /// <value>Array of play sessions matching the search criteria</value>
-        [DataMember(Name = "data", IsRequired = true, EmitDefaultValue = true)]
-        public List<PlaySessionResponseDto> Data { get; set; }
+        /// <value>List of heatmap tasks</value>
+        [DataMember(Name = "tasks", IsRequired = true, EmitDefaultValue = true)]
+        public List<HeatmapTaskV01ListItemDto> Tasks { get; set; }
 
         /// <summary>
-        /// Total number of sessions matching the criteria
+        /// Total number of tasks
         /// </summary>
-        /// <value>Total number of sessions matching the criteria</value>
+        /// <value>Total number of tasks</value>
         /*
         <example>100</example>
         */
@@ -76,9 +76,9 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public decimal Total { get; set; }
 
         /// <summary>
-        /// Number of results returned
+        /// Number of tasks returned
         /// </summary>
-        /// <value>Number of results returned</value>
+        /// <value>Number of tasks returned</value>
         /*
         <example>20</example>
         */
@@ -86,9 +86,9 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public decimal Limit { get; set; }
 
         /// <summary>
-        /// Number of results skipped
+        /// Offset for pagination
         /// </summary>
-        /// <value>Number of results skipped</value>
+        /// <value>Offset for pagination</value>
         /*
         <example>0</example>
         */
@@ -108,8 +108,8 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class SearchPlaySessionResponseDto {\n");
-            sb.Append("  Data: ").Append(Data).Append("\n");
+            sb.Append("class HeatmapTaskV01ListResponseDto {\n");
+            sb.Append("  Tasks: ").Append(Tasks).Append("\n");
             sb.Append("  Total: ").Append(Total).Append("\n");
             sb.Append("  Limit: ").Append(Limit).Append("\n");
             sb.Append("  Offset: ").Append(Offset).Append("\n");

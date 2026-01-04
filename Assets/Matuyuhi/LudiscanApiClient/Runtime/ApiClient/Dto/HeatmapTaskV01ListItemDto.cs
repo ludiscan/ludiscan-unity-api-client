@@ -24,15 +24,15 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// HeatmapTaskListItemDto
+    /// HeatmapTaskV01ListItemDto
     /// </summary>
-    [DataContract(Name = "HeatmapTaskListItemDto")]
-    public partial class HeatmapTaskListItemDto
+    [DataContract(Name = "HeatmapTaskV01ListItemDto")]
+    public partial class HeatmapTaskV01ListItemDto
     {
         /// <summary>
-        /// Status
+        /// Task status
         /// </summary>
-        /// <value>Status</value>
+        /// <value>Task status</value>
         [JsonConverter(typeof(StringEnumConverter))]
         public enum StatusEnum
         {
@@ -63,50 +63,43 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
 
 
         /// <summary>
-        /// Status
+        /// Task status
         /// </summary>
-        /// <value>Status</value>
+        /// <value>Task status</value>
         /*
         <example>completed</example>
         */
         [DataMember(Name = "status", IsRequired = true, EmitDefaultValue = true)]
         public StatusEnum Status { get; set; }
         /// <summary>
-        /// Initializes a new instance of the <see cref="HeatmapTaskListItemDto" /> class.
+        /// Initializes a new instance of the <see cref="HeatmapTaskV01ListItemDto" /> class.
         /// </summary>
         [JsonConstructorAttribute]
-        protected HeatmapTaskListItemDto()
+        protected HeatmapTaskV01ListItemDto()
         {
             this.AdditionalProperties = new Dictionary<string, object>();
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="HeatmapTaskListItemDto" /> class.
+        /// Initializes a new instance of the <see cref="HeatmapTaskV01ListItemDto" /> class.
         /// </summary>
         /// <param name="taskId">Task ID (required).</param>
-        /// <param name="project">Project (required).</param>
-        /// <param name="session">Session.</param>
+        /// <param name="sessionId">Session ID (if task is for a specific session).</param>
         /// <param name="sessionIds">Session IDs used for filtering (if multiple sessions).</param>
-        /// <param name="searchQuery">Search query text used to filter sessions (GitHub-style query).</param>
-        /// <param name="stepSize">Step size (required).</param>
-        /// <param name="zVisible">Z visible (required).</param>
-        /// <param name="status">Status (required).</param>
-        /// <param name="createdAt">Created at (required).</param>
-        /// <param name="updatedAt">Updated at (required).</param>
-        public HeatmapTaskListItemDto(decimal taskId = default(decimal), ProjectResponseDto project = default(ProjectResponseDto), PlaySessionResponseDto session = default(PlaySessionResponseDto), List<decimal> sessionIds = default(List<decimal>), Object searchQuery = default(Object), decimal stepSize = default(decimal), bool zVisible = default(bool), StatusEnum status = default(StatusEnum), DateTime createdAt = default(DateTime), DateTime updatedAt = default(DateTime))
+        /// <param name="searchQuery">Search query text used to filter sessions.</param>
+        /// <param name="stepSize">Step size for grid cells (required).</param>
+        /// <param name="zVisible">Whether Z axis is visible (3D mode) (required).</param>
+        /// <param name="status">Task status (required).</param>
+        /// <param name="createdAt">Created at timestamp (required).</param>
+        /// <param name="updatedAt">Updated at timestamp (required).</param>
+        public HeatmapTaskV01ListItemDto(decimal taskId = default(decimal), Object sessionId = default(Object), List<decimal> sessionIds = default(List<decimal>), Object searchQuery = default(Object), decimal stepSize = default(decimal), bool zVisible = default(bool), StatusEnum status = default(StatusEnum), DateTime createdAt = default(DateTime), DateTime updatedAt = default(DateTime))
         {
             this.TaskId = taskId;
-            // to ensure "project" is required (not null)
-            if (project == null)
-            {
-                throw new ArgumentNullException("project is a required property for HeatmapTaskListItemDto and cannot be null");
-            }
-            this.Project = project;
             this.StepSize = stepSize;
             this.ZVisible = zVisible;
             this.Status = status;
             this.CreatedAt = createdAt;
             this.UpdatedAt = updatedAt;
-            this.Session = session;
+            this.SessionId = sessionId;
             this.SessionIds = sessionIds;
             this.SearchQuery = searchQuery;
             this.AdditionalProperties = new Dictionary<string, object>();
@@ -123,18 +116,14 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public decimal TaskId { get; set; }
 
         /// <summary>
-        /// Project
+        /// Session ID (if task is for a specific session)
         /// </summary>
-        /// <value>Project</value>
-        [DataMember(Name = "project", IsRequired = true, EmitDefaultValue = true)]
-        public ProjectResponseDto Project { get; set; }
-
-        /// <summary>
-        /// Session
-        /// </summary>
-        /// <value>Session</value>
-        [DataMember(Name = "session", EmitDefaultValue = true)]
-        public PlaySessionResponseDto Session { get; set; }
+        /// <value>Session ID (if task is for a specific session)</value>
+        /*
+        <example>123</example>
+        */
+        [DataMember(Name = "sessionId", EmitDefaultValue = true)]
+        public Object SessionId { get; set; }
 
         /// <summary>
         /// Session IDs used for filtering (if multiple sessions)
@@ -147,9 +136,9 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public List<decimal> SessionIds { get; set; }
 
         /// <summary>
-        /// Search query text used to filter sessions (GitHub-style query)
+        /// Search query text used to filter sessions
         /// </summary>
-        /// <value>Search query text used to filter sessions (GitHub-style query)</value>
+        /// <value>Search query text used to filter sessions</value>
         /*
         <example>platform:Android is:finished</example>
         */
@@ -157,9 +146,9 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public Object SearchQuery { get; set; }
 
         /// <summary>
-        /// Step size
+        /// Step size for grid cells
         /// </summary>
-        /// <value>Step size</value>
+        /// <value>Step size for grid cells</value>
         /*
         <example>200</example>
         */
@@ -167,9 +156,9 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public decimal StepSize { get; set; }
 
         /// <summary>
-        /// Z visible
+        /// Whether Z axis is visible (3D mode)
         /// </summary>
-        /// <value>Z visible</value>
+        /// <value>Whether Z axis is visible (3D mode)</value>
         /*
         <example>true</example>
         */
@@ -177,9 +166,9 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public bool ZVisible { get; set; }
 
         /// <summary>
-        /// Created at
+        /// Created at timestamp
         /// </summary>
-        /// <value>Created at</value>
+        /// <value>Created at timestamp</value>
         /*
         <example>2021-01-01T00:00Z</example>
         */
@@ -187,9 +176,9 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public DateTime CreatedAt { get; set; }
 
         /// <summary>
-        /// Updated at
+        /// Updated at timestamp
         /// </summary>
-        /// <value>Updated at</value>
+        /// <value>Updated at timestamp</value>
         /*
         <example>2021-01-01T00:00Z</example>
         */
@@ -209,10 +198,9 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class HeatmapTaskListItemDto {\n");
+            sb.Append("class HeatmapTaskV01ListItemDto {\n");
             sb.Append("  TaskId: ").Append(TaskId).Append("\n");
-            sb.Append("  Project: ").Append(Project).Append("\n");
-            sb.Append("  Session: ").Append(Session).Append("\n");
+            sb.Append("  SessionId: ").Append(SessionId).Append("\n");
             sb.Append("  SessionIds: ").Append(SessionIds).Append("\n");
             sb.Append("  SearchQuery: ").Append(SearchQuery).Append("\n");
             sb.Append("  StepSize: ").Append(StepSize).Append("\n");

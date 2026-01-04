@@ -24,15 +24,15 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// HeatmapTaskListItemDto
+    /// HeatmapTaskV01Dto
     /// </summary>
-    [DataContract(Name = "HeatmapTaskListItemDto")]
-    public partial class HeatmapTaskListItemDto
+    [DataContract(Name = "HeatmapTaskV01Dto")]
+    public partial class HeatmapTaskV01Dto
     {
         /// <summary>
-        /// Status
+        /// Task status
         /// </summary>
-        /// <value>Status</value>
+        /// <value>Task status</value>
         [JsonConverter(typeof(StringEnumConverter))]
         public enum StatusEnum
         {
@@ -63,47 +63,61 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
 
 
         /// <summary>
-        /// Status
+        /// Task status
         /// </summary>
-        /// <value>Status</value>
+        /// <value>Task status</value>
         /*
         <example>completed</example>
         */
         [DataMember(Name = "status", IsRequired = true, EmitDefaultValue = true)]
         public StatusEnum Status { get; set; }
         /// <summary>
-        /// Initializes a new instance of the <see cref="HeatmapTaskListItemDto" /> class.
+        /// Initializes a new instance of the <see cref="HeatmapTaskV01Dto" /> class.
         /// </summary>
         [JsonConstructorAttribute]
-        protected HeatmapTaskListItemDto()
+        protected HeatmapTaskV01Dto()
         {
             this.AdditionalProperties = new Dictionary<string, object>();
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="HeatmapTaskListItemDto" /> class.
+        /// Initializes a new instance of the <see cref="HeatmapTaskV01Dto" /> class.
         /// </summary>
         /// <param name="taskId">Task ID (required).</param>
         /// <param name="project">Project (required).</param>
-        /// <param name="session">Session.</param>
+        /// <param name="session">Session (if task is for a specific session).</param>
         /// <param name="sessionIds">Session IDs used for filtering (if multiple sessions).</param>
         /// <param name="searchQuery">Search query text used to filter sessions (GitHub-style query).</param>
-        /// <param name="stepSize">Step size (required).</param>
-        /// <param name="zVisible">Z visible (required).</param>
-        /// <param name="status">Status (required).</param>
-        /// <param name="createdAt">Created at (required).</param>
-        /// <param name="updatedAt">Updated at (required).</param>
-        public HeatmapTaskListItemDto(decimal taskId = default(decimal), ProjectResponseDto project = default(ProjectResponseDto), PlaySessionResponseDto session = default(PlaySessionResponseDto), List<decimal> sessionIds = default(List<decimal>), Object searchQuery = default(Object), decimal stepSize = default(decimal), bool zVisible = default(bool), StatusEnum status = default(StatusEnum), DateTime createdAt = default(DateTime), DateTime updatedAt = default(DateTime))
+        /// <param name="stepSize">Step size for grid cells (required).</param>
+        /// <param name="zVisible">Whether Z axis is visible (3D mode) (required).</param>
+        /// <param name="status">Task status (required).</param>
+        /// <param name="result">Normalized heatmap result with density values in 0-1 range (required).</param>
+        /// <param name="stats">Normalization statistics (required).</param>
+        /// <param name="createdAt">Created at timestamp (required).</param>
+        /// <param name="updatedAt">Updated at timestamp (required).</param>
+        public HeatmapTaskV01Dto(decimal taskId = default(decimal), ProjectResponseDto project = default(ProjectResponseDto), PlaySessionResponseDto session = default(PlaySessionResponseDto), List<decimal> sessionIds = default(List<decimal>), Object searchQuery = default(Object), decimal stepSize = default(decimal), bool zVisible = default(bool), StatusEnum status = default(StatusEnum), List<NormalizedHeatmapPointDto> result = default(List<NormalizedHeatmapPointDto>), NormalizedHeatmapStatsDto stats = default(NormalizedHeatmapStatsDto), DateTime createdAt = default(DateTime), DateTime updatedAt = default(DateTime))
         {
             this.TaskId = taskId;
             // to ensure "project" is required (not null)
             if (project == null)
             {
-                throw new ArgumentNullException("project is a required property for HeatmapTaskListItemDto and cannot be null");
+                throw new ArgumentNullException("project is a required property for HeatmapTaskV01Dto and cannot be null");
             }
             this.Project = project;
             this.StepSize = stepSize;
             this.ZVisible = zVisible;
             this.Status = status;
+            // to ensure "result" is required (not null)
+            if (result == null)
+            {
+                throw new ArgumentNullException("result is a required property for HeatmapTaskV01Dto and cannot be null");
+            }
+            this.Result = result;
+            // to ensure "stats" is required (not null)
+            if (stats == null)
+            {
+                throw new ArgumentNullException("stats is a required property for HeatmapTaskV01Dto and cannot be null");
+            }
+            this.Stats = stats;
             this.CreatedAt = createdAt;
             this.UpdatedAt = updatedAt;
             this.Session = session;
@@ -130,9 +144,9 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public ProjectResponseDto Project { get; set; }
 
         /// <summary>
-        /// Session
+        /// Session (if task is for a specific session)
         /// </summary>
-        /// <value>Session</value>
+        /// <value>Session (if task is for a specific session)</value>
         [DataMember(Name = "session", EmitDefaultValue = true)]
         public PlaySessionResponseDto Session { get; set; }
 
@@ -157,9 +171,9 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public Object SearchQuery { get; set; }
 
         /// <summary>
-        /// Step size
+        /// Step size for grid cells
         /// </summary>
-        /// <value>Step size</value>
+        /// <value>Step size for grid cells</value>
         /*
         <example>200</example>
         */
@@ -167,9 +181,9 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public decimal StepSize { get; set; }
 
         /// <summary>
-        /// Z visible
+        /// Whether Z axis is visible (3D mode)
         /// </summary>
-        /// <value>Z visible</value>
+        /// <value>Whether Z axis is visible (3D mode)</value>
         /*
         <example>true</example>
         */
@@ -177,9 +191,23 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public bool ZVisible { get; set; }
 
         /// <summary>
-        /// Created at
+        /// Normalized heatmap result with density values in 0-1 range
         /// </summary>
-        /// <value>Created at</value>
+        /// <value>Normalized heatmap result with density values in 0-1 range</value>
+        [DataMember(Name = "result", IsRequired = true, EmitDefaultValue = true)]
+        public List<NormalizedHeatmapPointDto> Result { get; set; }
+
+        /// <summary>
+        /// Normalization statistics
+        /// </summary>
+        /// <value>Normalization statistics</value>
+        [DataMember(Name = "stats", IsRequired = true, EmitDefaultValue = true)]
+        public NormalizedHeatmapStatsDto Stats { get; set; }
+
+        /// <summary>
+        /// Created at timestamp
+        /// </summary>
+        /// <value>Created at timestamp</value>
         /*
         <example>2021-01-01T00:00Z</example>
         */
@@ -187,9 +215,9 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public DateTime CreatedAt { get; set; }
 
         /// <summary>
-        /// Updated at
+        /// Updated at timestamp
         /// </summary>
-        /// <value>Updated at</value>
+        /// <value>Updated at timestamp</value>
         /*
         <example>2021-01-01T00:00Z</example>
         */
@@ -209,7 +237,7 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class HeatmapTaskListItemDto {\n");
+            sb.Append("class HeatmapTaskV01Dto {\n");
             sb.Append("  TaskId: ").Append(TaskId).Append("\n");
             sb.Append("  Project: ").Append(Project).Append("\n");
             sb.Append("  Session: ").Append(Session).Append("\n");
@@ -218,6 +246,8 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
             sb.Append("  StepSize: ").Append(StepSize).Append("\n");
             sb.Append("  ZVisible: ").Append(ZVisible).Append("\n");
             sb.Append("  Status: ").Append(Status).Append("\n");
+            sb.Append("  Result: ").Append(Result).Append("\n");
+            sb.Append("  Stats: ").Append(Stats).Append("\n");
             sb.Append("  CreatedAt: ").Append(CreatedAt).Append("\n");
             sb.Append("  UpdatedAt: ").Append(UpdatedAt).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
