@@ -24,50 +24,74 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// RawRouteDtoTrajectoryPointsInner
+    /// NormalizedHeatmapPointDto
     /// </summary>
-    [DataContract(Name = "RawRouteDto_trajectory_points_inner")]
-    public partial class RawRouteDtoTrajectoryPointsInner
+    [DataContract(Name = "NormalizedHeatmapPointDto")]
+    public partial class NormalizedHeatmapPointDto
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="RawRouteDtoTrajectoryPointsInner" /> class.
+        /// Initializes a new instance of the <see cref="NormalizedHeatmapPointDto" /> class.
         /// </summary>
-        /// <param name="x">x.</param>
-        /// <param name="y">y.</param>
-        /// <param name="z">z.</param>
-        /// <param name="offsetTimestamp">offsetTimestamp.</param>
-        public RawRouteDtoTrajectoryPointsInner(decimal x = default(decimal), decimal y = default(decimal), decimal z = default(decimal), decimal offsetTimestamp = default(decimal))
+        [JsonConstructorAttribute]
+        protected NormalizedHeatmapPointDto()
+        {
+            this.AdditionalProperties = new Dictionary<string, object>();
+        }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NormalizedHeatmapPointDto" /> class.
+        /// </summary>
+        /// <param name="x">X coordinate (required).</param>
+        /// <param name="y">Y coordinate (required).</param>
+        /// <param name="z">Z coordinate (required).</param>
+        /// <param name="normalizedDensity">Normalized density value (0-1 range) (required).</param>
+        public NormalizedHeatmapPointDto(decimal x = default(decimal), decimal y = default(decimal), decimal z = default(decimal), decimal normalizedDensity = default(decimal))
         {
             this.X = x;
             this.Y = y;
             this.Z = z;
-            this.OffsetTimestamp = offsetTimestamp;
+            this.NormalizedDensity = normalizedDensity;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// Gets or Sets X
+        /// X coordinate
         /// </summary>
-        [DataMember(Name = "x", EmitDefaultValue = false)]
+        /// <value>X coordinate</value>
+        /*
+        <example>100.5</example>
+        */
+        [DataMember(Name = "x", IsRequired = true, EmitDefaultValue = true)]
         public decimal X { get; set; }
 
         /// <summary>
-        /// Gets or Sets Y
+        /// Y coordinate
         /// </summary>
-        [DataMember(Name = "y", EmitDefaultValue = false)]
+        /// <value>Y coordinate</value>
+        /*
+        <example>200.5</example>
+        */
+        [DataMember(Name = "y", IsRequired = true, EmitDefaultValue = true)]
         public decimal Y { get; set; }
 
         /// <summary>
-        /// Gets or Sets Z
+        /// Z coordinate
         /// </summary>
-        [DataMember(Name = "z", EmitDefaultValue = false)]
+        /// <value>Z coordinate</value>
+        /*
+        <example>50</example>
+        */
+        [DataMember(Name = "z", IsRequired = true, EmitDefaultValue = true)]
         public decimal Z { get; set; }
 
         /// <summary>
-        /// Gets or Sets OffsetTimestamp
+        /// Normalized density value (0-1 range)
         /// </summary>
-        [DataMember(Name = "offset_timestamp", EmitDefaultValue = false)]
-        public decimal OffsetTimestamp { get; set; }
+        /// <value>Normalized density value (0-1 range)</value>
+        /*
+        <example>0.75</example>
+        */
+        [DataMember(Name = "normalizedDensity", IsRequired = true, EmitDefaultValue = true)]
+        public decimal NormalizedDensity { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -82,11 +106,11 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class RawRouteDtoTrajectoryPointsInner {\n");
+            sb.Append("class NormalizedHeatmapPointDto {\n");
             sb.Append("  X: ").Append(X).Append("\n");
             sb.Append("  Y: ").Append(Y).Append("\n");
             sb.Append("  Z: ").Append(Z).Append("\n");
-            sb.Append("  OffsetTimestamp: ").Append(OffsetTimestamp).Append("\n");
+            sb.Append("  NormalizedDensity: ").Append(NormalizedDensity).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
