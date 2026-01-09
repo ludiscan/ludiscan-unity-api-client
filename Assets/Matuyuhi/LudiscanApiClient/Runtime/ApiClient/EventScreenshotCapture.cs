@@ -69,6 +69,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
             public struct FrameData
             {
                 public byte[] RawPixels;
+                public byte[] JpegData;     // Pre-encoded JPEG data
                 public float Timestamp;
                 public int Width;
                 public int Height;
@@ -287,9 +288,20 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 for (int i = 0; i < availableCount; i++)
                 {
                     int idx = (startIndex + i) % bufferSize;
-                    if (captureData.FrameBuffer[idx].IsValid)
+                    ref var frame = ref captureData.FrameBuffer[idx];
+
+                    if (frame.IsValid)
                     {
-                        result[i] = EncodeToJpeg(captureData.FrameBuffer[idx]);
+                        // Return pre-encoded JPEG if available (fast path)
+                        if (frame.JpegData != null && frame.JpegData.Length > 0)
+                        {
+                            result[i] = frame.JpegData;
+                        }
+                        else
+                        {
+                            // Fallback: encode now if pre-encoding failed (rare case)
+                            result[i] = EncodeToJpegFallback(frame);
+                        }
                     }
                     else
                     {
@@ -369,6 +381,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 for (int i = 0; i < data.FrameBuffer.Length; i++)
                 {
                     data.FrameBuffer[i].IsValid = false;
+                    data.FrameBuffer[i].JpegData = null;
                 }
             }
         }
@@ -415,6 +428,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 data.FrameBuffer[i] = new PlayerCaptureData.FrameData
                 {
                     RawPixels = new byte[effectiveWidth * effectiveHeight * 3],
+                    JpegData = null,
                     Width = effectiveWidth,
                     Height = effectiveHeight,
                     IsValid = false
@@ -566,6 +580,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 data.FrameBuffer[i] = new PlayerCaptureData.FrameData
                 {
                     RawPixels = new byte[newWidth * newHeight * 3],
+                    JpegData = null,
                     Width = newWidth,
                     Height = newHeight,
                     IsValid = false
@@ -628,6 +643,7 @@ namespace LudiscanApiClient.Runtime.ApiClient
                     frame.Height = data.CaptureRT.height;
                     frame.Timestamp = Time.time;
                     frame.IsValid = true;
+                    frame.JpegData = null;  // Clear old JPEG data
 
                     // データサイズの整合性をチェック
                     int expectedSize = frame.Width * frame.Height * 3;  // RGB24 = 3 bytes per pixel
@@ -647,6 +663,11 @@ namespace LudiscanApiClient.Runtime.ApiClient
                     }
 
                     data.FrameBuffer[data.WriteIndex] = frame;
+
+                    // Pre-encode to JPEG immediately
+                    // This spreads the CPU cost over time instead of at collision
+                    PreEncodeJpeg(ref data.FrameBuffer[data.WriteIndex]);
+
                     data.WriteIndex = (data.WriteIndex + 1) % bufferSize;
                     data.FrameCount = Mathf.Min(data.FrameCount + 1, bufferSize);
                 }
@@ -657,8 +678,61 @@ namespace LudiscanApiClient.Runtime.ApiClient
             }
         }
 
-        private byte[] EncodeToJpeg(PlayerCaptureData.FrameData frame)
+        /// <summary>
+        /// Pre-encodes raw pixel data to JPEG and stores it in the frame.
+        /// Called immediately after GPU readback completes.
+        /// </summary>
+        /// <param name="frame">Reference to the frame data to encode</param>
+        /// <returns>True if encoding succeeded</returns>
+        private bool PreEncodeJpeg(ref PlayerCaptureData.FrameData frame)
         {
+            if (!frame.IsValid || frame.RawPixels == null) return false;
+
+            try
+            {
+                int expectedSize = frame.Width * frame.Height * 3;
+                if (frame.RawPixels.Length != expectedSize)
+                {
+                    Debug.LogWarning($"EventScreenshotCapture: PreEncode skipped due to size mismatch");
+                    return false;
+                }
+
+                // Step 1: Flip raw bytes vertically (in-place, minimal allocation)
+                if (flipTextureVertically)
+                {
+                    FlipRawBytesVertically(frame.RawPixels, frame.Width, frame.Height);
+                }
+
+                // Step 2: Create Texture2D and encode to JPEG
+                var tex = new Texture2D(frame.Width, frame.Height, TextureFormat.RGB24, false);
+                tex.LoadRawTextureData(frame.RawPixels);
+                tex.Apply();  // Only 1 GPU sync needed (no flip via Texture2D)
+
+                frame.JpegData = tex.EncodeToJPG(jpegQuality);
+
+                Destroy(tex);
+
+                // Optional: Clear raw pixels to save memory (commented out to allow fallback)
+                // frame.RawPixels = null;
+
+                return frame.JpegData != null && frame.JpegData.Length > 0;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"EventScreenshotCapture: PreEncode failed: {ex.Message}");
+                frame.JpegData = null;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Fallback JPEG encoding for frames that weren't pre-encoded.
+        /// This should rarely be called in normal operation.
+        /// </summary>
+        private byte[] EncodeToJpegFallback(PlayerCaptureData.FrameData frame)
+        {
+            Debug.LogWarning("EventScreenshotCapture: Using fallback JPEG encoding (pre-encoding may have failed)");
+
             if (!frame.IsValid || frame.RawPixels == null) return new byte[0];
 
             try
@@ -692,6 +766,31 @@ namespace LudiscanApiClient.Runtime.ApiClient
             {
                 Debug.LogError($"EventScreenshotCapture: JPEG encode failed: {ex.Message}");
                 return new byte[0];
+            }
+        }
+
+        /// <summary>
+        /// Flips raw RGB24 pixel data vertically in-place.
+        /// This is much faster than using Texture2D.GetPixels/SetPixels.
+        /// </summary>
+        /// <param name="rawPixels">RGB24 byte array (width * height * 3 bytes)</param>
+        /// <param name="width">Image width in pixels</param>
+        /// <param name="height">Image height in pixels</param>
+        private void FlipRawBytesVertically(byte[] rawPixels, int width, int height)
+        {
+            int bytesPerRow = width * 3;  // RGB24 = 3 bytes per pixel
+            byte[] tempRow = new byte[bytesPerRow];  // Single allocation for swap buffer
+
+            int halfHeight = height / 2;
+            for (int y = 0; y < halfHeight; y++)
+            {
+                int topRowStart = y * bytesPerRow;
+                int bottomRowStart = (height - 1 - y) * bytesPerRow;
+
+                // Swap rows using Buffer.BlockCopy (optimized memory copy)
+                Buffer.BlockCopy(rawPixels, topRowStart, tempRow, 0, bytesPerRow);
+                Buffer.BlockCopy(rawPixels, bottomRowStart, rawPixels, topRowStart, bytesPerRow);
+                Buffer.BlockCopy(tempRow, 0, rawPixels, bottomRowStart, bytesPerRow);
             }
         }
 
