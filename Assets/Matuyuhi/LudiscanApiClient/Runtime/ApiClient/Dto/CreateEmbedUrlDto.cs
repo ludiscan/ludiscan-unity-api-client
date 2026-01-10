@@ -24,42 +24,30 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// CalcFieldResponseDto
+    /// CreateEmbedUrlDto
     /// </summary>
-    [DataContract(Name = "CalcFieldResponseDto")]
-    public partial class CalcFieldResponseDto
+    [DataContract(Name = "CreateEmbedUrlDto")]
+    public partial class CreateEmbedUrlDto
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CalcFieldResponseDto" /> class.
+        /// Initializes a new instance of the <see cref="CreateEmbedUrlDto" /> class.
         /// </summary>
-        [JsonConstructorAttribute]
-        protected CalcFieldResponseDto()
+        /// <param name="expiresInHours">有効期限（時間単位）。0.5〜8760の範囲で指定可能。デフォルト: 4時間 (default to 4M).</param>
+        public CreateEmbedUrlDto(decimal expiresInHours = 4M)
         {
-            this.AdditionalProperties = new Dictionary<string, object>();
-        }
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CalcFieldResponseDto" /> class.
-        /// </summary>
-        /// <param name="fields">fields (required).</param>
-        public CalcFieldResponseDto(List<string> fields = default(List<string>))
-        {
-            // to ensure "fields" is required (not null)
-            if (fields == null)
-            {
-                throw new ArgumentNullException("fields is a required property for CalcFieldResponseDto and cannot be null");
-            }
-            this.Fields = fields;
+            this.ExpiresInHours = expiresInHours;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// Gets or Sets Fields
+        /// 有効期限（時間単位）。0.5〜8760の範囲で指定可能。デフォルト: 4時間
         /// </summary>
+        /// <value>有効期限（時間単位）。0.5〜8760の範囲で指定可能。デフォルト: 4時間</value>
         /*
-        <example>field</example>
+        <example>4</example>
         */
-        [DataMember(Name = "fields", IsRequired = true, EmitDefaultValue = true)]
-        public List<string> Fields { get; set; }
+        [DataMember(Name = "expiresInHours", EmitDefaultValue = false)]
+        public decimal ExpiresInHours { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -74,8 +62,8 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class CalcFieldResponseDto {\n");
-            sb.Append("  Fields: ").Append(Fields).Append("\n");
+            sb.Append("class CreateEmbedUrlDto {\n");
+            sb.Append("  ExpiresInHours: ").Append(ExpiresInHours).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();

@@ -24,42 +24,38 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// CalcFieldResponseDto
+    /// ScreenshotStorageStatusDto
     /// </summary>
-    [DataContract(Name = "CalcFieldResponseDto")]
-    public partial class CalcFieldResponseDto
+    [DataContract(Name = "ScreenshotStorageStatusDto")]
+    public partial class ScreenshotStorageStatusDto
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CalcFieldResponseDto" /> class.
+        /// Initializes a new instance of the <see cref="ScreenshotStorageStatusDto" /> class.
         /// </summary>
         [JsonConstructorAttribute]
-        protected CalcFieldResponseDto()
+        protected ScreenshotStorageStatusDto()
         {
             this.AdditionalProperties = new Dictionary<string, object>();
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="CalcFieldResponseDto" /> class.
+        /// Initializes a new instance of the <see cref="ScreenshotStorageStatusDto" /> class.
         /// </summary>
-        /// <param name="fields">fields (required).</param>
-        public CalcFieldResponseDto(List<string> fields = default(List<string>))
+        /// <param name="enabled">Whether screenshot storage is enabled (required).</param>
+        public ScreenshotStorageStatusDto(bool enabled = default(bool))
         {
-            // to ensure "fields" is required (not null)
-            if (fields == null)
-            {
-                throw new ArgumentNullException("fields is a required property for CalcFieldResponseDto and cannot be null");
-            }
-            this.Fields = fields;
+            this.Enabled = enabled;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// Gets or Sets Fields
+        /// Whether screenshot storage is enabled
         /// </summary>
+        /// <value>Whether screenshot storage is enabled</value>
         /*
-        <example>field</example>
+        <example>true</example>
         */
-        [DataMember(Name = "fields", IsRequired = true, EmitDefaultValue = true)]
-        public List<string> Fields { get; set; }
+        [DataMember(Name = "enabled", IsRequired = true, EmitDefaultValue = true)]
+        public bool Enabled { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -74,8 +70,8 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class CalcFieldResponseDto {\n");
-            sb.Append("  Fields: ").Append(Fields).Append("\n");
+            sb.Append("class ScreenshotStorageStatusDto {\n");
+            sb.Append("  Enabled: ").Append(Enabled).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
