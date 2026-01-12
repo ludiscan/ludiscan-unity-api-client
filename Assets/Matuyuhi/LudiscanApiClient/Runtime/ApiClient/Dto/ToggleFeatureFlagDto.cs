@@ -24,64 +24,37 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// DefaultErrorResponse
+    /// ToggleFeatureFlagDto
     /// </summary>
-    [DataContract(Name = "DefaultErrorResponse")]
-    public partial class DefaultErrorResponse
+    [DataContract(Name = "ToggleFeatureFlagDto")]
+    public partial class ToggleFeatureFlagDto
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="DefaultErrorResponse" /> class.
+        /// Initializes a new instance of the <see cref="ToggleFeatureFlagDto" /> class.
         /// </summary>
         [JsonConstructorAttribute]
-        protected DefaultErrorResponse()
+        protected ToggleFeatureFlagDto()
         {
             this.AdditionalProperties = new Dictionary<string, object>();
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="DefaultErrorResponse" /> class.
+        /// Initializes a new instance of the <see cref="ToggleFeatureFlagDto" /> class.
         /// </summary>
-        /// <param name="code">code (required).</param>
-        /// <param name="message">message (required).</param>
-        /// <param name="error">error.</param>
-        public DefaultErrorResponse(decimal code = default(decimal), string message = default(string), string error = default(string))
+        /// <param name="enabled">enabled (required).</param>
+        public ToggleFeatureFlagDto(bool enabled = default(bool))
         {
-            this.Code = code;
-            // to ensure "message" is required (not null)
-            if (message == null)
-            {
-                throw new ArgumentNullException("message is a required property for DefaultErrorResponse and cannot be null");
-            }
-            this.Message = message;
-            this.Error = error;
+            this.Enabled = enabled;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// Gets or Sets Code
+        /// Gets or Sets Enabled
         /// </summary>
         /*
-        <example>400</example>
+        <example>true</example>
         */
-        [DataMember(Name = "code", IsRequired = true, EmitDefaultValue = true)]
-        public decimal Code { get; set; }
-
-        /// <summary>
-        /// Gets or Sets Message
-        /// </summary>
-        /*
-        <example>Bad Request</example>
-        */
-        [DataMember(Name = "message", IsRequired = true, EmitDefaultValue = true)]
-        public string Message { get; set; }
-
-        /// <summary>
-        /// Gets or Sets Error
-        /// </summary>
-        /*
-        <example>Invalid input data</example>
-        */
-        [DataMember(Name = "error", EmitDefaultValue = true)]
-        public string Error { get; set; }
+        [DataMember(Name = "enabled", IsRequired = true, EmitDefaultValue = true)]
+        public bool Enabled { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -96,10 +69,8 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class DefaultErrorResponse {\n");
-            sb.Append("  Code: ").Append(Code).Append("\n");
-            sb.Append("  Message: ").Append(Message).Append("\n");
-            sb.Append("  Error: ").Append(Error).Append("\n");
+            sb.Append("class ToggleFeatureFlagDto {\n");
+            sb.Append("  Enabled: ").Append(Enabled).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
