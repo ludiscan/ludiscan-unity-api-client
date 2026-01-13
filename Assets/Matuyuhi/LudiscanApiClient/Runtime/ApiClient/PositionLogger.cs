@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using LudiscanApiClient.Runtime.ApiClient.Model;
+using UnityEngine;
 
 namespace LudiscanApiClient.Runtime.ApiClient
 {
@@ -109,6 +110,37 @@ namespace LudiscanApiClient.Runtime.ApiClient
                 return;
             }
             IsLoggingStarted = false;
+        }
+
+        /// <summary>
+        /// バッファをクリアして書き込み位置をリセットします
+        /// アップロード後に呼び出すことで、次回のゲームで古いデータが混入することを防ぎます
+        /// </summary>
+        public void ClearBuffer()
+        {
+            Array.Clear(buffer, 0, buffer.Length);
+            writeIndex = 0;
+        }
+
+        /// <summary>
+        /// 現在の有効なバッファデータを取得し、バッファをクリアします
+        /// FieldObjectLoggerやGeneralEventLoggerのGetLogsAndClear()と同じパターン
+        /// </summary>
+        /// <returns>有効な位置情報エントリの配列</returns>
+        public PositionEntry[] GetBufferAndClear()
+        {
+            // 有効なエントリのみを抽出（nullでないもの）
+            var validEntries = new List<PositionEntry>();
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                if (buffer[i].Position != Vector3.zero && buffer[i].PlayerId >= 0 && buffer[i].OffsetTimeStamp > 0)
+                {
+                    validEntries.Add(buffer[i]);
+                }
+            }
+            var result = validEntries.ToArray();
+            ClearBuffer();
+            return result;
         }
 
         private async Task Logging()
