@@ -24,42 +24,42 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// CalcFieldResponseDto
+    /// UpdateUserPasswordDto
     /// </summary>
-    [DataContract(Name = "CalcFieldResponseDto")]
-    public partial class CalcFieldResponseDto
+    [DataContract(Name = "UpdateUserPasswordDto")]
+    public partial class UpdateUserPasswordDto
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CalcFieldResponseDto" /> class.
+        /// Initializes a new instance of the <see cref="UpdateUserPasswordDto" /> class.
         /// </summary>
-        [JsonConstructorAttribute]
-        protected CalcFieldResponseDto()
+        /// <param name="password">新しいパスワード（6文字以上）.</param>
+        /// <param name="clearPassword">trueの場合、パスワードをクリア（OAuth専用ユーザーにする）.</param>
+        public UpdateUserPasswordDto(string password = default(string), bool clearPassword = default(bool))
         {
-            this.AdditionalProperties = new Dictionary<string, object>();
-        }
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CalcFieldResponseDto" /> class.
-        /// </summary>
-        /// <param name="fields">fields (required).</param>
-        public CalcFieldResponseDto(List<string> fields = default(List<string>))
-        {
-            // to ensure "fields" is required (not null)
-            if (fields == null)
-            {
-                throw new ArgumentNullException("fields is a required property for CalcFieldResponseDto and cannot be null");
-            }
-            this.Fields = fields;
+            this.Password = password;
+            this.ClearPassword = clearPassword;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// Gets or Sets Fields
+        /// 新しいパスワード（6文字以上）
         /// </summary>
+        /// <value>新しいパスワード（6文字以上）</value>
         /*
-        <example>field</example>
+        <example>newPassword123</example>
         */
-        [DataMember(Name = "fields", IsRequired = true, EmitDefaultValue = true)]
-        public List<string> Fields { get; set; }
+        [DataMember(Name = "password", EmitDefaultValue = false)]
+        public string Password { get; set; }
+
+        /// <summary>
+        /// trueの場合、パスワードをクリア（OAuth専用ユーザーにする）
+        /// </summary>
+        /// <value>trueの場合、パスワードをクリア（OAuth専用ユーザーにする）</value>
+        /*
+        <example>false</example>
+        */
+        [DataMember(Name = "clearPassword", EmitDefaultValue = true)]
+        public bool ClearPassword { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -74,8 +74,9 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class CalcFieldResponseDto {\n");
-            sb.Append("  Fields: ").Append(Fields).Append("\n");
+            sb.Append("class UpdateUserPasswordDto {\n");
+            sb.Append("  Password: ").Append(Password).Append("\n");
+            sb.Append("  ClearPassword: ").Append(ClearPassword).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
