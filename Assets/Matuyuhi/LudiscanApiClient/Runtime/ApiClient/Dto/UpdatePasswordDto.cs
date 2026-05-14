@@ -24,60 +24,60 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// HeatmapEmbedUrlResponseDto
+    /// UpdatePasswordDto
     /// </summary>
-    [DataContract(Name = "HeatmapEmbedUrlResponseDto")]
-    public partial class HeatmapEmbedUrlResponseDto
+    [DataContract(Name = "UpdatePasswordDto")]
+    public partial class UpdatePasswordDto
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="HeatmapEmbedUrlResponseDto" /> class.
+        /// Initializes a new instance of the <see cref="UpdatePasswordDto" /> class.
         /// </summary>
         [JsonConstructorAttribute]
-        protected HeatmapEmbedUrlResponseDto()
+        protected UpdatePasswordDto()
         {
             this.AdditionalProperties = new Dictionary<string, object>();
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="HeatmapEmbedUrlResponseDto" /> class.
+        /// Initializes a new instance of the <see cref="UpdatePasswordDto" /> class.
         /// </summary>
-        /// <param name="url">ヒートマップ埋め込みページのURL（トークン付き） (required).</param>
-        /// <param name="expiresAt">トークンの有効期限（ISO 8601形式） (required).</param>
-        public HeatmapEmbedUrlResponseDto(string url = default(string), string expiresAt = default(string))
+        /// <param name="currentPassword">現在のパスワード (required).</param>
+        /// <param name="newPassword">新しいパスワード（8文字以上） (required).</param>
+        public UpdatePasswordDto(string currentPassword = default(string), string newPassword = default(string))
         {
-            // to ensure "url" is required (not null)
-            if (url == null)
+            // to ensure "currentPassword" is required (not null)
+            if (currentPassword == null)
             {
-                throw new ArgumentNullException("url is a required property for HeatmapEmbedUrlResponseDto and cannot be null");
+                throw new ArgumentNullException("currentPassword is a required property for UpdatePasswordDto and cannot be null");
             }
-            this.Url = url;
-            // to ensure "expiresAt" is required (not null)
-            if (expiresAt == null)
+            this.CurrentPassword = currentPassword;
+            // to ensure "newPassword" is required (not null)
+            if (newPassword == null)
             {
-                throw new ArgumentNullException("expiresAt is a required property for HeatmapEmbedUrlResponseDto and cannot be null");
+                throw new ArgumentNullException("newPassword is a required property for UpdatePasswordDto and cannot be null");
             }
-            this.ExpiresAt = expiresAt;
+            this.NewPassword = newPassword;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// ヒートマップ埋め込みページのURL（トークン付き）
+        /// 現在のパスワード
         /// </summary>
-        /// <value>ヒートマップ埋め込みページのURL（トークン付き）</value>
+        /// <value>現在のパスワード</value>
         /*
-        <example>https://ludiscan.com/heatmap/embed/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</example>
+        <example>currentPassword123</example>
         */
-        [DataMember(Name = "url", IsRequired = true, EmitDefaultValue = true)]
-        public string Url { get; set; }
+        [DataMember(Name = "currentPassword", IsRequired = true, EmitDefaultValue = true)]
+        public string CurrentPassword { get; set; }
 
         /// <summary>
-        /// トークンの有効期限（ISO 8601形式）
+        /// 新しいパスワード（8文字以上）
         /// </summary>
-        /// <value>トークンの有効期限（ISO 8601形式）</value>
+        /// <value>新しいパスワード（8文字以上）</value>
         /*
-        <example>2024-01-01T12:00:00.000Z</example>
+        <example>newPassword123</example>
         */
-        [DataMember(Name = "expiresAt", IsRequired = true, EmitDefaultValue = true)]
-        public string ExpiresAt { get; set; }
+        [DataMember(Name = "newPassword", IsRequired = true, EmitDefaultValue = true)]
+        public string NewPassword { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -92,9 +92,9 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class HeatmapEmbedUrlResponseDto {\n");
-            sb.Append("  Url: ").Append(Url).Append("\n");
-            sb.Append("  ExpiresAt: ").Append(ExpiresAt).Append("\n");
+            sb.Append("class UpdatePasswordDto {\n");
+            sb.Append("  CurrentPassword: ").Append(CurrentPassword).Append("\n");
+            sb.Append("  NewPassword: ").Append(NewPassword).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
