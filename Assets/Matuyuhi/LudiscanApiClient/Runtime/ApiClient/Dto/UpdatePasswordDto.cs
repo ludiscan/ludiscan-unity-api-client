@@ -24,74 +24,60 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// HeatMapTaskResultListItem
+    /// UpdatePasswordDto
     /// </summary>
-    [DataContract(Name = "HeatMapTaskResultListItem")]
-    public partial class HeatMapTaskResultListItem
+    [DataContract(Name = "UpdatePasswordDto")]
+    public partial class UpdatePasswordDto
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="HeatMapTaskResultListItem" /> class.
+        /// Initializes a new instance of the <see cref="UpdatePasswordDto" /> class.
         /// </summary>
         [JsonConstructorAttribute]
-        protected HeatMapTaskResultListItem()
+        protected UpdatePasswordDto()
         {
             this.AdditionalProperties = new Dictionary<string, object>();
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="HeatMapTaskResultListItem" /> class.
+        /// Initializes a new instance of the <see cref="UpdatePasswordDto" /> class.
         /// </summary>
-        /// <param name="x">X (required).</param>
-        /// <param name="y">Y (required).</param>
-        /// <param name="z">Z.</param>
-        /// <param name="density">Density (required).</param>
-        public HeatMapTaskResultListItem(decimal x = default(decimal), decimal y = default(decimal), decimal z = default(decimal), decimal density = default(decimal))
+        /// <param name="currentPassword">現在のパスワード (required).</param>
+        /// <param name="newPassword">新しいパスワード（8文字以上） (required).</param>
+        public UpdatePasswordDto(string currentPassword = default(string), string newPassword = default(string))
         {
-            this.X = x;
-            this.Y = y;
-            this.Density = density;
-            this.Z = z;
+            // to ensure "currentPassword" is required (not null)
+            if (currentPassword == null)
+            {
+                throw new ArgumentNullException("currentPassword is a required property for UpdatePasswordDto and cannot be null");
+            }
+            this.CurrentPassword = currentPassword;
+            // to ensure "newPassword" is required (not null)
+            if (newPassword == null)
+            {
+                throw new ArgumentNullException("newPassword is a required property for UpdatePasswordDto and cannot be null");
+            }
+            this.NewPassword = newPassword;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// X
+        /// 現在のパスワード
         /// </summary>
-        /// <value>X</value>
+        /// <value>現在のパスワード</value>
         /*
-        <example>0</example>
+        <example>currentPassword123</example>
         */
-        [DataMember(Name = "x", IsRequired = true, EmitDefaultValue = true)]
-        public decimal X { get; set; }
+        [DataMember(Name = "currentPassword", IsRequired = true, EmitDefaultValue = true)]
+        public string CurrentPassword { get; set; }
 
         /// <summary>
-        /// Y
+        /// 新しいパスワード（8文字以上）
         /// </summary>
-        /// <value>Y</value>
+        /// <value>新しいパスワード（8文字以上）</value>
         /*
-        <example>0</example>
+        <example>newPassword123</example>
         */
-        [DataMember(Name = "y", IsRequired = true, EmitDefaultValue = true)]
-        public decimal Y { get; set; }
-
-        /// <summary>
-        /// Z
-        /// </summary>
-        /// <value>Z</value>
-        /*
-        <example>0</example>
-        */
-        [DataMember(Name = "z", EmitDefaultValue = false)]
-        public decimal Z { get; set; }
-
-        /// <summary>
-        /// Density
-        /// </summary>
-        /// <value>Density</value>
-        /*
-        <example>0</example>
-        */
-        [DataMember(Name = "density", IsRequired = true, EmitDefaultValue = true)]
-        public decimal Density { get; set; }
+        [DataMember(Name = "newPassword", IsRequired = true, EmitDefaultValue = true)]
+        public string NewPassword { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -106,11 +92,9 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class HeatMapTaskResultListItem {\n");
-            sb.Append("  X: ").Append(X).Append("\n");
-            sb.Append("  Y: ").Append(Y).Append("\n");
-            sb.Append("  Z: ").Append(Z).Append("\n");
-            sb.Append("  Density: ").Append(Density).Append("\n");
+            sb.Append("class UpdatePasswordDto {\n");
+            sb.Append("  CurrentPassword: ").Append(CurrentPassword).Append("\n");
+            sb.Append("  NewPassword: ").Append(NewPassword).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
