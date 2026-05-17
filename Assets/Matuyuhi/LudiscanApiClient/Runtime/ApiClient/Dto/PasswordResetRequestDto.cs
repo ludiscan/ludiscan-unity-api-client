@@ -24,27 +24,43 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// GoogleAuthWithReturnQueryDto
+    /// PasswordResetRequestDto
     /// </summary>
-    [DataContract(Name = "GoogleAuthWithReturnQueryDto")]
-    public partial class GoogleAuthWithReturnQueryDto
+    [DataContract(Name = "PasswordResetRequestDto")]
+    public partial class PasswordResetRequestDto
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="GoogleAuthWithReturnQueryDto" /> class.
+        /// Initializes a new instance of the <see cref="PasswordResetRequestDto" /> class.
         /// </summary>
-        /// <param name="returnTo">認証完了後に戻る先（フロントのURL）.</param>
-        public GoogleAuthWithReturnQueryDto(string returnTo = default(string))
+        [JsonConstructorAttribute]
+        protected PasswordResetRequestDto()
         {
-            this.ReturnTo = returnTo;
+            this.AdditionalProperties = new Dictionary<string, object>();
+        }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PasswordResetRequestDto" /> class.
+        /// </summary>
+        /// <param name="email">パスワード再設定リンクを送るメールアドレス (required).</param>
+        public PasswordResetRequestDto(string email = default(string))
+        {
+            // to ensure "email" is required (not null)
+            if (email == null)
+            {
+                throw new ArgumentNullException("email is a required property for PasswordResetRequestDto and cannot be null");
+            }
+            this.Email = email;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// 認証完了後に戻る先（フロントのURL）
+        /// パスワード再設定リンクを送るメールアドレス
         /// </summary>
-        /// <value>認証完了後に戻る先（フロントのURL）</value>
-        [DataMember(Name = "returnTo", EmitDefaultValue = false)]
-        public string ReturnTo { get; set; }
+        /// <value>パスワード再設定リンクを送るメールアドレス</value>
+        /*
+        <example>user@example.com</example>
+        */
+        [DataMember(Name = "email", IsRequired = true, EmitDefaultValue = true)]
+        public string Email { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -59,8 +75,8 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class GoogleAuthWithReturnQueryDto {\n");
-            sb.Append("  ReturnTo: ").Append(ReturnTo).Append("\n");
+            sb.Append("class PasswordResetRequestDto {\n");
+            sb.Append("  Email: ").Append(Email).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
