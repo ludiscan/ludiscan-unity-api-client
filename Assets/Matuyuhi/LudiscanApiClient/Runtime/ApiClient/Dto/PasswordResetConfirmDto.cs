@@ -24,55 +24,57 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// LoginUserDto
+    /// PasswordResetConfirmDto
     /// </summary>
-    [DataContract(Name = "LoginUserDto")]
-    public partial class LoginUserDto
+    [DataContract(Name = "PasswordResetConfirmDto")]
+    public partial class PasswordResetConfirmDto
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="LoginUserDto" /> class.
+        /// Initializes a new instance of the <see cref="PasswordResetConfirmDto" /> class.
         /// </summary>
         [JsonConstructorAttribute]
-        protected LoginUserDto()
+        protected PasswordResetConfirmDto()
         {
             this.AdditionalProperties = new Dictionary<string, object>();
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="LoginUserDto" /> class.
+        /// Initializes a new instance of the <see cref="PasswordResetConfirmDto" /> class.
         /// </summary>
-        /// <param name="password">password (required).</param>
-        /// <param name="email">email (required).</param>
-        public LoginUserDto(string password = default(string), string email = default(string))
+        /// <param name="token">メールに記載されたリセットトークン (required).</param>
+        /// <param name="newPassword">新しいパスワード（8文字以上） (required).</param>
+        public PasswordResetConfirmDto(string token = default(string), string newPassword = default(string))
         {
-            // to ensure "password" is required (not null)
-            if (password == null)
+            // to ensure "token" is required (not null)
+            if (token == null)
             {
-                throw new ArgumentNullException("password is a required property for LoginUserDto and cannot be null");
+                throw new ArgumentNullException("token is a required property for PasswordResetConfirmDto and cannot be null");
             }
-            this.Password = password;
-            // to ensure "email" is required (not null)
-            if (email == null)
+            this.Token = token;
+            // to ensure "newPassword" is required (not null)
+            if (newPassword == null)
             {
-                throw new ArgumentNullException("email is a required property for LoginUserDto and cannot be null");
+                throw new ArgumentNullException("newPassword is a required property for PasswordResetConfirmDto and cannot be null");
             }
-            this.Email = email;
+            this.NewPassword = newPassword;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// Gets or Sets Password
+        /// メールに記載されたリセットトークン
         /// </summary>
+        /// <value>メールに記載されたリセットトークン</value>
+        [DataMember(Name = "token", IsRequired = true, EmitDefaultValue = true)]
+        public string Token { get; set; }
+
+        /// <summary>
+        /// 新しいパスワード（8文字以上）
+        /// </summary>
+        /// <value>新しいパスワード（8文字以上）</value>
         /*
-        <example>password</example>
+        <example>newPassword123</example>
         */
-        [DataMember(Name = "password", IsRequired = true, EmitDefaultValue = true)]
-        public string Password { get; set; }
-
-        /// <summary>
-        /// Gets or Sets Email
-        /// </summary>
-        [DataMember(Name = "email", IsRequired = true, EmitDefaultValue = true)]
-        public string Email { get; set; }
+        [DataMember(Name = "newPassword", IsRequired = true, EmitDefaultValue = true)]
+        public string NewPassword { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -87,9 +89,9 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class LoginUserDto {\n");
-            sb.Append("  Password: ").Append(Password).Append("\n");
-            sb.Append("  Email: ").Append(Email).Append("\n");
+            sb.Append("class PasswordResetConfirmDto {\n");
+            sb.Append("  Token: ").Append(Token).Append("\n");
+            sb.Append("  NewPassword: ").Append(NewPassword).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();

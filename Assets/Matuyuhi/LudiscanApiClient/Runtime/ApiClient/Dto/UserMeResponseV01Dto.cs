@@ -24,90 +24,62 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// ProjectMemberDto
+    /// UserMeResponseV01Dto
     /// </summary>
-    [DataContract(Name = "ProjectMemberDto")]
-    public partial class ProjectMemberDto
+    [DataContract(Name = "UserMeResponseV01Dto")]
+    public partial class UserMeResponseV01Dto
     {
         /// <summary>
-        /// Defines Role
-        /// </summary>
-        [JsonConverter(typeof(StringEnumConverter))]
-        public enum RoleEnum
-        {
-            /// <summary>
-            /// Enum Admin for value: admin
-            /// </summary>
-            [EnumMember(Value = "admin")]
-            Admin = 1,
-
-            /// <summary>
-            /// Enum Viewer for value: viewer
-            /// </summary>
-            [EnumMember(Value = "viewer")]
-            Viewer = 2
-        }
-
-
-        /// <summary>
-        /// Gets or Sets Role
-        /// </summary>
-        [DataMember(Name = "role", IsRequired = true, EmitDefaultValue = true)]
-        public RoleEnum Role { get; set; }
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ProjectMemberDto" /> class.
+        /// Initializes a new instance of the <see cref="UserMeResponseV01Dto" /> class.
         /// </summary>
         [JsonConstructorAttribute]
-        protected ProjectMemberDto()
+        protected UserMeResponseV01Dto()
         {
             this.AdditionalProperties = new Dictionary<string, object>();
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="ProjectMemberDto" /> class.
+        /// Initializes a new instance of the <see cref="UserMeResponseV01Dto" /> class.
         /// </summary>
-        /// <param name="userId">userId (required).</param>
-        /// <param name="projectId">projectId (required).</param>
-        /// <param name="role">role (required).</param>
+        /// <param name="id">id (required).</param>
         /// <param name="email">email (required).</param>
         /// <param name="name">name (required).</param>
-        /// <param name="createdAt">createdAt (required).</param>
-        public ProjectMemberDto(string userId = default(string), decimal projectId = default(decimal), RoleEnum role = default(RoleEnum), string email = default(string), string name = default(string), DateTime createdAt = default(DateTime))
+        /// <param name="role">role (required).</param>
+        /// <param name="hasPassword">パスワードが設定済みか。false の場合は currentPassword なしで設定可能（OAuth登録ユーザーなど） (required).</param>
+        public UserMeResponseV01Dto(string id = default(string), string email = default(string), string name = default(string), string role = default(string), bool hasPassword = default(bool))
         {
-            // to ensure "userId" is required (not null)
-            if (userId == null)
+            // to ensure "id" is required (not null)
+            if (id == null)
             {
-                throw new ArgumentNullException("userId is a required property for ProjectMemberDto and cannot be null");
+                throw new ArgumentNullException("id is a required property for UserMeResponseV01Dto and cannot be null");
             }
-            this.UserId = userId;
-            this.ProjectId = projectId;
-            this.Role = role;
+            this.Id = id;
             // to ensure "email" is required (not null)
             if (email == null)
             {
-                throw new ArgumentNullException("email is a required property for ProjectMemberDto and cannot be null");
+                throw new ArgumentNullException("email is a required property for UserMeResponseV01Dto and cannot be null");
             }
             this.Email = email;
             // to ensure "name" is required (not null)
             if (name == null)
             {
-                throw new ArgumentNullException("name is a required property for ProjectMemberDto and cannot be null");
+                throw new ArgumentNullException("name is a required property for UserMeResponseV01Dto and cannot be null");
             }
             this.Name = name;
-            this.CreatedAt = createdAt;
+            // to ensure "role" is required (not null)
+            if (role == null)
+            {
+                throw new ArgumentNullException("role is a required property for UserMeResponseV01Dto and cannot be null");
+            }
+            this.Role = role;
+            this.HasPassword = hasPassword;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// Gets or Sets UserId
+        /// Gets or Sets Id
         /// </summary>
-        [DataMember(Name = "user_id", IsRequired = true, EmitDefaultValue = true)]
-        public string UserId { get; set; }
-
-        /// <summary>
-        /// Gets or Sets ProjectId
-        /// </summary>
-        [DataMember(Name = "project_id", IsRequired = true, EmitDefaultValue = true)]
-        public decimal ProjectId { get; set; }
+        [DataMember(Name = "id", IsRequired = true, EmitDefaultValue = true)]
+        public string Id { get; set; }
 
         /// <summary>
         /// Gets or Sets Email
@@ -122,10 +94,17 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public string Name { get; set; }
 
         /// <summary>
-        /// Gets or Sets CreatedAt
+        /// Gets or Sets Role
         /// </summary>
-        [DataMember(Name = "created_at", IsRequired = true, EmitDefaultValue = true)]
-        public DateTime CreatedAt { get; set; }
+        [DataMember(Name = "role", IsRequired = true, EmitDefaultValue = true)]
+        public string Role { get; set; }
+
+        /// <summary>
+        /// パスワードが設定済みか。false の場合は currentPassword なしで設定可能（OAuth登録ユーザーなど）
+        /// </summary>
+        /// <value>パスワードが設定済みか。false の場合は currentPassword なしで設定可能（OAuth登録ユーザーなど）</value>
+        [DataMember(Name = "hasPassword", IsRequired = true, EmitDefaultValue = true)]
+        public bool HasPassword { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -140,13 +119,12 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class ProjectMemberDto {\n");
-            sb.Append("  UserId: ").Append(UserId).Append("\n");
-            sb.Append("  ProjectId: ").Append(ProjectId).Append("\n");
-            sb.Append("  Role: ").Append(Role).Append("\n");
+            sb.Append("class UserMeResponseV01Dto {\n");
+            sb.Append("  Id: ").Append(Id).Append("\n");
             sb.Append("  Email: ").Append(Email).Append("\n");
             sb.Append("  Name: ").Append(Name).Append("\n");
-            sb.Append("  CreatedAt: ").Append(CreatedAt).Append("\n");
+            sb.Append("  Role: ").Append(Role).Append("\n");
+            sb.Append("  HasPassword: ").Append(HasPassword).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
