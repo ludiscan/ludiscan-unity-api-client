@@ -93,7 +93,7 @@ jobs:
             ## Notes
             - DTO classes are generated using OpenAPI Generator
             - The API client uses UnityWebRequest (not RestSharp)
-          branch: "swagger-update/v${{ github.event.client_payload.version }}"
+          branch: "swagger-update"
           base: main
           labels: |
             automated
