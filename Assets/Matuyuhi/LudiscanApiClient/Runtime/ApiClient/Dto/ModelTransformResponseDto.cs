@@ -24,66 +24,40 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// AddMemberByEmailDto
+    /// ModelTransformResponseDto
     /// </summary>
-    [DataContract(Name = "AddMemberByEmailDto")]
-    public partial class AddMemberByEmailDto
+    [DataContract(Name = "ModelTransformResponseDto")]
+    public partial class ModelTransformResponseDto
     {
         /// <summary>
-        /// Defines Role
-        /// </summary>
-        [JsonConverter(typeof(StringEnumConverter))]
-        public enum RoleEnum
-        {
-            /// <summary>
-            /// Enum Admin for value: admin
-            /// </summary>
-            [EnumMember(Value = "admin")]
-            Admin = 1,
-
-            /// <summary>
-            /// Enum Viewer for value: viewer
-            /// </summary>
-            [EnumMember(Value = "viewer")]
-            Viewer = 2
-        }
-
-
-        /// <summary>
-        /// Gets or Sets Role
-        /// </summary>
-        [DataMember(Name = "role", EmitDefaultValue = false)]
-        public RoleEnum? Role { get; set; }
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AddMemberByEmailDto" /> class.
+        /// Initializes a new instance of the <see cref="ModelTransformResponseDto" /> class.
         /// </summary>
         [JsonConstructorAttribute]
-        protected AddMemberByEmailDto()
+        protected ModelTransformResponseDto()
         {
             this.AdditionalProperties = new Dictionary<string, object>();
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="AddMemberByEmailDto" /> class.
+        /// Initializes a new instance of the <see cref="ModelTransformResponseDto" /> class.
         /// </summary>
-        /// <param name="email">email (required).</param>
-        /// <param name="role">role.</param>
-        public AddMemberByEmailDto(string email = default(string), RoleEnum? role = default(RoleEnum?))
+        /// <param name="transform">モデルの配置情報（未設定の場合は null） (required).</param>
+        public ModelTransformResponseDto(ModelTransformDto transform = default(ModelTransformDto))
         {
-            // to ensure "email" is required (not null)
-            if (email == null)
+            // to ensure "transform" is required (not null)
+            if (transform == null)
             {
-                throw new ArgumentNullException("email is a required property for AddMemberByEmailDto and cannot be null");
+                throw new ArgumentNullException("transform is a required property for ModelTransformResponseDto and cannot be null");
             }
-            this.Email = email;
-            this.Role = role;
+            this.Transform = transform;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// Gets or Sets Email
+        /// モデルの配置情報（未設定の場合は null）
         /// </summary>
-        [DataMember(Name = "email", IsRequired = true, EmitDefaultValue = true)]
-        public string Email { get; set; }
+        /// <value>モデルの配置情報（未設定の場合は null）</value>
+        [DataMember(Name = "transform", IsRequired = true, EmitDefaultValue = true)]
+        public ModelTransformDto Transform { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -98,9 +72,8 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class AddMemberByEmailDto {\n");
-            sb.Append("  Email: ").Append(Email).Append("\n");
-            sb.Append("  Role: ").Append(Role).Append("\n");
+            sb.Append("class ModelTransformResponseDto {\n");
+            sb.Append("  Transform: ").Append(Transform).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();

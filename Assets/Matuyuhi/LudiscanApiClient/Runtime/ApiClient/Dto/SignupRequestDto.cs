@@ -24,64 +24,41 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// AddMemberByEmailDto
+    /// SignupRequestDto
     /// </summary>
-    [DataContract(Name = "AddMemberByEmailDto")]
-    public partial class AddMemberByEmailDto
+    [DataContract(Name = "SignupRequestDto")]
+    public partial class SignupRequestDto
     {
         /// <summary>
-        /// Defines Role
-        /// </summary>
-        [JsonConverter(typeof(StringEnumConverter))]
-        public enum RoleEnum
-        {
-            /// <summary>
-            /// Enum Admin for value: admin
-            /// </summary>
-            [EnumMember(Value = "admin")]
-            Admin = 1,
-
-            /// <summary>
-            /// Enum Viewer for value: viewer
-            /// </summary>
-            [EnumMember(Value = "viewer")]
-            Viewer = 2
-        }
-
-
-        /// <summary>
-        /// Gets or Sets Role
-        /// </summary>
-        [DataMember(Name = "role", EmitDefaultValue = false)]
-        public RoleEnum? Role { get; set; }
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AddMemberByEmailDto" /> class.
+        /// Initializes a new instance of the <see cref="SignupRequestDto" /> class.
         /// </summary>
         [JsonConstructorAttribute]
-        protected AddMemberByEmailDto()
+        protected SignupRequestDto()
         {
             this.AdditionalProperties = new Dictionary<string, object>();
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="AddMemberByEmailDto" /> class.
+        /// Initializes a new instance of the <see cref="SignupRequestDto" /> class.
         /// </summary>
-        /// <param name="email">email (required).</param>
-        /// <param name="role">role.</param>
-        public AddMemberByEmailDto(string email = default(string), RoleEnum? role = default(RoleEnum?))
+        /// <param name="email">認証コードを送るメールアドレス (required).</param>
+        public SignupRequestDto(string email = default(string))
         {
             // to ensure "email" is required (not null)
             if (email == null)
             {
-                throw new ArgumentNullException("email is a required property for AddMemberByEmailDto and cannot be null");
+                throw new ArgumentNullException("email is a required property for SignupRequestDto and cannot be null");
             }
             this.Email = email;
-            this.Role = role;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// Gets or Sets Email
+        /// 認証コードを送るメールアドレス
         /// </summary>
+        /// <value>認証コードを送るメールアドレス</value>
+        /*
+        <example>user@example.com</example>
+        */
         [DataMember(Name = "email", IsRequired = true, EmitDefaultValue = true)]
         public string Email { get; set; }
 
@@ -98,9 +75,8 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class AddMemberByEmailDto {\n");
+            sb.Append("class SignupRequestDto {\n");
             sb.Append("  Email: ").Append(Email).Append("\n");
-            sb.Append("  Role: ").Append(Role).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
