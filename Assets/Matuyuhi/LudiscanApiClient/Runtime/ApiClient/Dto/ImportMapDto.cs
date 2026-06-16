@@ -24,66 +24,38 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// AddMemberByEmailDto
+    /// ImportMapDto
     /// </summary>
-    [DataContract(Name = "AddMemberByEmailDto")]
-    public partial class AddMemberByEmailDto
+    [DataContract(Name = "ImportMapDto")]
+    public partial class ImportMapDto
     {
         /// <summary>
-        /// Defines Role
-        /// </summary>
-        [JsonConverter(typeof(StringEnumConverter))]
-        public enum RoleEnum
-        {
-            /// <summary>
-            /// Enum Admin for value: admin
-            /// </summary>
-            [EnumMember(Value = "admin")]
-            Admin = 1,
-
-            /// <summary>
-            /// Enum Viewer for value: viewer
-            /// </summary>
-            [EnumMember(Value = "viewer")]
-            Viewer = 2
-        }
-
-
-        /// <summary>
-        /// Gets or Sets Role
-        /// </summary>
-        [DataMember(Name = "role", EmitDefaultValue = false)]
-        public RoleEnum? Role { get; set; }
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AddMemberByEmailDto" /> class.
+        /// Initializes a new instance of the <see cref="ImportMapDto" /> class.
         /// </summary>
         [JsonConstructorAttribute]
-        protected AddMemberByEmailDto()
+        protected ImportMapDto()
         {
             this.AdditionalProperties = new Dictionary<string, object>();
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="AddMemberByEmailDto" /> class.
+        /// Initializes a new instance of the <see cref="ImportMapDto" /> class.
         /// </summary>
-        /// <param name="email">email (required).</param>
-        /// <param name="role">role.</param>
-        public AddMemberByEmailDto(string email = default(string), RoleEnum? role = default(RoleEnum?))
+        /// <param name="sourceProjectId">取り込み元プロジェクトID（閲覧権限が必要） (required).</param>
+        public ImportMapDto(decimal sourceProjectId = default(decimal))
         {
-            // to ensure "email" is required (not null)
-            if (email == null)
-            {
-                throw new ArgumentNullException("email is a required property for AddMemberByEmailDto and cannot be null");
-            }
-            this.Email = email;
-            this.Role = role;
+            this.SourceProjectId = sourceProjectId;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// Gets or Sets Email
+        /// 取り込み元プロジェクトID（閲覧権限が必要）
         /// </summary>
-        [DataMember(Name = "email", IsRequired = true, EmitDefaultValue = true)]
-        public string Email { get; set; }
+        /// <value>取り込み元プロジェクトID（閲覧権限が必要）</value>
+        /*
+        <example>1</example>
+        */
+        [DataMember(Name = "sourceProjectId", IsRequired = true, EmitDefaultValue = true)]
+        public decimal SourceProjectId { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -98,9 +70,8 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class AddMemberByEmailDto {\n");
-            sb.Append("  Email: ").Append(Email).Append("\n");
-            sb.Append("  Role: ").Append(Role).Append("\n");
+            sb.Append("class ImportMapDto {\n");
+            sb.Append("  SourceProjectId: ").Append(SourceProjectId).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
