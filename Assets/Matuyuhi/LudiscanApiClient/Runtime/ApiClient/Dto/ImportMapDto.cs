@@ -24,43 +24,38 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// UpdateGameApiKeyProjectsDto
+    /// ImportMapDto
     /// </summary>
-    [DataContract(Name = "UpdateGameApiKeyProjectsDto")]
-    public partial class UpdateGameApiKeyProjectsDto
+    [DataContract(Name = "ImportMapDto")]
+    public partial class ImportMapDto
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="UpdateGameApiKeyProjectsDto" /> class.
+        /// Initializes a new instance of the <see cref="ImportMapDto" /> class.
         /// </summary>
         [JsonConstructorAttribute]
-        protected UpdateGameApiKeyProjectsDto()
+        protected ImportMapDto()
         {
             this.AdditionalProperties = new Dictionary<string, object>();
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="UpdateGameApiKeyProjectsDto" /> class.
+        /// Initializes a new instance of the <see cref="ImportMapDto" /> class.
         /// </summary>
-        /// <param name="projectIds">アクセスを許可するプロジェクトIDのリスト (required).</param>
-        public UpdateGameApiKeyProjectsDto(List<decimal> projectIds = default(List<decimal>))
+        /// <param name="sourceProjectId">取り込み元プロジェクトID（閲覧権限が必要） (required).</param>
+        public ImportMapDto(decimal sourceProjectId = default(decimal))
         {
-            // to ensure "projectIds" is required (not null)
-            if (projectIds == null)
-            {
-                throw new ArgumentNullException("projectIds is a required property for UpdateGameApiKeyProjectsDto and cannot be null");
-            }
-            this.ProjectIds = projectIds;
+            this.SourceProjectId = sourceProjectId;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// アクセスを許可するプロジェクトIDのリスト
+        /// 取り込み元プロジェクトID（閲覧権限が必要）
         /// </summary>
-        /// <value>アクセスを許可するプロジェクトIDのリスト</value>
+        /// <value>取り込み元プロジェクトID（閲覧権限が必要）</value>
         /*
-        <example>[1,2,3]</example>
+        <example>1</example>
         */
-        [DataMember(Name = "projectIds", IsRequired = true, EmitDefaultValue = true)]
-        public List<decimal> ProjectIds { get; set; }
+        [DataMember(Name = "sourceProjectId", IsRequired = true, EmitDefaultValue = true)]
+        public decimal SourceProjectId { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -75,8 +70,8 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class UpdateGameApiKeyProjectsDto {\n");
-            sb.Append("  ProjectIds: ").Append(ProjectIds).Append("\n");
+            sb.Append("class ImportMapDto {\n");
+            sb.Append("  SourceProjectId: ").Append(SourceProjectId).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();

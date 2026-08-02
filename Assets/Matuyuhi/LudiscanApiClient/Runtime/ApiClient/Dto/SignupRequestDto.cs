@@ -24,43 +24,43 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// UpdateGameApiKeyProjectsDto
+    /// SignupRequestDto
     /// </summary>
-    [DataContract(Name = "UpdateGameApiKeyProjectsDto")]
-    public partial class UpdateGameApiKeyProjectsDto
+    [DataContract(Name = "SignupRequestDto")]
+    public partial class SignupRequestDto
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="UpdateGameApiKeyProjectsDto" /> class.
+        /// Initializes a new instance of the <see cref="SignupRequestDto" /> class.
         /// </summary>
         [JsonConstructorAttribute]
-        protected UpdateGameApiKeyProjectsDto()
+        protected SignupRequestDto()
         {
             this.AdditionalProperties = new Dictionary<string, object>();
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="UpdateGameApiKeyProjectsDto" /> class.
+        /// Initializes a new instance of the <see cref="SignupRequestDto" /> class.
         /// </summary>
-        /// <param name="projectIds">アクセスを許可するプロジェクトIDのリスト (required).</param>
-        public UpdateGameApiKeyProjectsDto(List<decimal> projectIds = default(List<decimal>))
+        /// <param name="email">認証コードを送るメールアドレス (required).</param>
+        public SignupRequestDto(string email = default(string))
         {
-            // to ensure "projectIds" is required (not null)
-            if (projectIds == null)
+            // to ensure "email" is required (not null)
+            if (email == null)
             {
-                throw new ArgumentNullException("projectIds is a required property for UpdateGameApiKeyProjectsDto and cannot be null");
+                throw new ArgumentNullException("email is a required property for SignupRequestDto and cannot be null");
             }
-            this.ProjectIds = projectIds;
+            this.Email = email;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// アクセスを許可するプロジェクトIDのリスト
+        /// 認証コードを送るメールアドレス
         /// </summary>
-        /// <value>アクセスを許可するプロジェクトIDのリスト</value>
+        /// <value>認証コードを送るメールアドレス</value>
         /*
-        <example>[1,2,3]</example>
+        <example>user@example.com</example>
         */
-        [DataMember(Name = "projectIds", IsRequired = true, EmitDefaultValue = true)]
-        public List<decimal> ProjectIds { get; set; }
+        [DataMember(Name = "email", IsRequired = true, EmitDefaultValue = true)]
+        public string Email { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -75,8 +75,8 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class UpdateGameApiKeyProjectsDto {\n");
-            sb.Append("  ProjectIds: ").Append(ProjectIds).Append("\n");
+            sb.Append("class SignupRequestDto {\n");
+            sb.Append("  Email: ").Append(Email).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
