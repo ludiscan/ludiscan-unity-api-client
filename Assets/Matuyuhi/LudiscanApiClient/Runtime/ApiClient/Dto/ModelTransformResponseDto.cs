@@ -24,43 +24,40 @@ using Newtonsoft.Json.Linq;
 namespace LudiscanApiClient.Runtime.ApiClient.Dto
 {
     /// <summary>
-    /// UpdateGameApiKeyProjectsDto
+    /// ModelTransformResponseDto
     /// </summary>
-    [DataContract(Name = "UpdateGameApiKeyProjectsDto")]
-    public partial class UpdateGameApiKeyProjectsDto
+    [DataContract(Name = "ModelTransformResponseDto")]
+    public partial class ModelTransformResponseDto
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="UpdateGameApiKeyProjectsDto" /> class.
+        /// Initializes a new instance of the <see cref="ModelTransformResponseDto" /> class.
         /// </summary>
         [JsonConstructorAttribute]
-        protected UpdateGameApiKeyProjectsDto()
+        protected ModelTransformResponseDto()
         {
             this.AdditionalProperties = new Dictionary<string, object>();
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="UpdateGameApiKeyProjectsDto" /> class.
+        /// Initializes a new instance of the <see cref="ModelTransformResponseDto" /> class.
         /// </summary>
-        /// <param name="projectIds">アクセスを許可するプロジェクトIDのリスト (required).</param>
-        public UpdateGameApiKeyProjectsDto(List<decimal> projectIds = default(List<decimal>))
+        /// <param name="transform">モデルの配置情報（未設定の場合は null） (required).</param>
+        public ModelTransformResponseDto(ModelTransformDto transform = default(ModelTransformDto))
         {
-            // to ensure "projectIds" is required (not null)
-            if (projectIds == null)
+            // to ensure "transform" is required (not null)
+            if (transform == null)
             {
-                throw new ArgumentNullException("projectIds is a required property for UpdateGameApiKeyProjectsDto and cannot be null");
+                throw new ArgumentNullException("transform is a required property for ModelTransformResponseDto and cannot be null");
             }
-            this.ProjectIds = projectIds;
+            this.Transform = transform;
             this.AdditionalProperties = new Dictionary<string, object>();
         }
 
         /// <summary>
-        /// アクセスを許可するプロジェクトIDのリスト
+        /// モデルの配置情報（未設定の場合は null）
         /// </summary>
-        /// <value>アクセスを許可するプロジェクトIDのリスト</value>
-        /*
-        <example>[1,2,3]</example>
-        */
-        [DataMember(Name = "projectIds", IsRequired = true, EmitDefaultValue = true)]
-        public List<decimal> ProjectIds { get; set; }
+        /// <value>モデルの配置情報（未設定の場合は null）</value>
+        [DataMember(Name = "transform", IsRequired = true, EmitDefaultValue = true)]
+        public ModelTransformDto Transform { get; set; }
 
         /// <summary>
         /// Gets or Sets additional properties
@@ -75,8 +72,8 @@ namespace LudiscanApiClient.Runtime.ApiClient.Dto
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("class UpdateGameApiKeyProjectsDto {\n");
-            sb.Append("  ProjectIds: ").Append(ProjectIds).Append("\n");
+            sb.Append("class ModelTransformResponseDto {\n");
+            sb.Append("  Transform: ").Append(Transform).Append("\n");
             sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
